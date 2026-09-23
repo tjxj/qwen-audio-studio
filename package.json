@@ -1,0 +1,9 @@
+{
+  "name": "qwen-audio-studio",
+  "private": true,
+  "scripts": {
+    "test": "npm --prefix frontend test -- --run",
+    "build": "npm --prefix frontend run build",
+    "dev": "npm --prefix frontend run dev"
+  }
+}

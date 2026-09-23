@@ -1,0 +1,11 @@
+.DS_Store
+.venv/
+frontend/node_modules/
+frontend/dist/
+frontend/*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
+**/__pycache__/
+*.py[cod]
+*.scpt
+Qwen Audio Studio.app/

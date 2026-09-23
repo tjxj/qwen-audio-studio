@@ -1,0 +1,27 @@
+:root {
+  font-family: Inter, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: #edf3ff;
+  background: #07101d;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --bg: #07101d;
+  --bg-deep: #040a13;
+  --panel: #0b1626;
+  --panel-raised: #0e1c2f;
+  --panel-soft: #101f34;
+  --line: #1f334c;
+  --line-strong: #2a4365;
+  --text: #f2f6ff;
+  --muted: #91a3ba;
+  --subtle: #61748e;
+  --blue: #4c82ff;
+  --blue-bright: #2c72ff;
+  --cyan: #25d3e8;
+  --green: #38d8a2;
+  --amber: #f2a94b;
+  --danger: #ff6b73;
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --shadow: 0 20px 60px rgb(0 0 0 / 32%);
+}
