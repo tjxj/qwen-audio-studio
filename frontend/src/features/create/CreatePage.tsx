@@ -7,19 +7,21 @@ import {
   getProject,
   getSession,
   hasConfiguredCredentials,
-  prepareReference,
-  updateProject
+  listProjects,
+  prepareReference
 } from "../../api";
 import type {CreateJobRequest, Project} from "../../types";
 import CreateWorkbench from "./CreateWorkbench";
+import {useProjectDraft} from "./useProjectDraft";
 
 export default function CreatePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const projectId = searchParams.get("project");
+  const requestedId = searchParams.get("project");
   const [credentialsReady, setCredentialsReady] = useState(false);
-  const [project, setProject] = useState<Project | undefined>();
-  const [projectError, setProjectError] = useState("");
+  const [loaded, setLoaded] = useState<Project | undefined>();
+  const [loadError, setLoadError] = useState("");
+  const [pending, setPending] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -37,41 +39,76 @@ export default function CreatePage() {
 
   useEffect(() => {
     let active = true;
-    setProjectError("");
-    if (!projectId) {
-      setProject(undefined);
-      return;
+    setPending(true);
+    setLoadError("");
+    setLoaded(undefined);
+    if (requestedId) {
+      getProject(requestedId)
+        .then((value) => {
+          if (active) setLoaded(value);
+        })
+        .catch((reason) => {
+          if (active) setLoadError(reason instanceof Error ? reason.message : "项目加载失败");
+        })
+        .finally(() => {
+          if (active) setPending(false);
+        });
+      return () => {
+        active = false;
+      };
     }
-    getProject(projectId)
-      .then((value) => { if (active) setProject(value); })
-      .catch((reason) => { if (active) setProjectError(reason instanceof Error ? reason.message : "项目加载失败"); });
-    return () => { active = false; };
-  }, [projectId]);
-
-  const submit = async (payload: CreateJobRequest) => {
-    const projectInput = {
-      name: payload.project_name,
-      mode: payload.mode,
-      prompt: payload.prompt,
-      params: payload.params
+    // "/" restores the most recent draft that is still open.
+    listProjects()
+      .then((items) => {
+        if (!active) return;
+        const recent = items.find((item) => !item.archived);
+        if (recent) setLoaded(recent);
+      })
+      .catch(() => {
+        /* No reachable service: the page still opens on a fresh, unsaved draft. */
+      })
+      .finally(() => {
+        if (active) setPending(false);
+      });
+    return () => {
+      active = false;
     };
-    if (project) {
-      await updateProject(project.id, projectInput);
-      return createJob({...payload, project_id: project.id});
-    }
-    const created = await createProject(projectInput);
-    return createJob({...payload, project_id: created.id});
+  }, [requestedId]);
+
+  const draft = useProjectDraft({
+    projectId: requestedId,
+    loaded,
+    onProjectCreated: (id) => navigate(`/?project=${id}`, {replace: true})
+  });
+
+  if (pending) return <div className="loading-state">正在打开项目…</div>;
+  if (loadError) return <div className="loading-state error">{loadError}</div>;
+
+  const startNew = async () => {
+    const created = await createProject({
+      name: "未命名声音场景",
+      mode: "podcast",
+      prompt: ""
+    });
+    navigate(`/?project=${created.id}`, {replace: true});
   };
 
-  if (projectId && !project && !projectError) return <div className="loading-state">正在打开项目…</div>;
-  if (projectError) return <div className="loading-state error">{projectError}</div>;
+  const submit = async (payload: CreateJobRequest) => {
+    const saved = await draft.saveNow();
+    if (!saved) throw new Error(draft.message || "草稿保存失败，已停止生成。");
+    const projectId = draft.projectId;
+    if (!projectId) throw new Error("请先保存草稿，再生成。");
+    return createJob({...payload, project_id: projectId});
+  };
 
   return (
     <CreateWorkbench
       credentialsReady={credentialsReady}
-      initialProject={project}
+      draft={draft}
+      initialProject={loaded}
       onPrepareReference={prepareReference}
       onDeleteReference={deleteReference}
+      onNewProject={() => void startNew()}
       onSubmit={submit}
       onJobCreated={(id) => navigate("/results/" + id)}
     />

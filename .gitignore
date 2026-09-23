@@ -9,3 +9,11 @@ frontend/vite.config.d.ts
 *.py[cod]
 *.scpt
 Qwen Audio Studio.app/
+
+# Runtime data never belongs in the repository: only the migration scripts do.
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.sqlite3.part
+studio.lock
+backups/

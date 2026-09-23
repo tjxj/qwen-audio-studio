@@ -15,12 +15,13 @@ from app.api.projects import router as projects_router
 from app.api.references import router as references_router
 from app.api.settings import router as settings_router
 from app.config import AppConfig
+from app.errors import install_error_handlers
 from app.security import LocalSecurityMiddleware
 from app.services.keychain import CredentialStore, SystemKeychainStore
 from app.services.qwen_adapter import QwenAdapter
 from app.services.references import ReferenceRegistry
-from app.services.jobs import JobManager
-from app.services.storage import AssetRegistry, JobStore, ProjectStore
+from app.services.jobs import JobManager, SqliteJobStore
+from app.services.studio_store import StudioStore
 
 
 def create_app(
@@ -29,6 +30,7 @@ def create_app(
     csrf_token: str | None = None,
     generation_worker=None,
     frontend_dist: Path | None = None,
+    studio_store: StudioStore | None = None,
 ) -> FastAPI:
     resolved_config = config or AppConfig.from_environment()
     resolved_store = credential_store or SystemKeychainStore()
@@ -53,13 +55,11 @@ def create_app(
         resolved_config.data_root / "cache" / "references",
         app.state.qwen_adapter,
     )
-    app.state.project_store = ProjectStore(
-        resolved_config.data_root / "projects"
-    )
-    app.state.job_store = JobStore(resolved_config.data_root / "jobs")
-    app.state.asset_registry = AssetRegistry(
-        resolved_config.data_root / "assets.json"
-    )
+    studio = studio_store or StudioStore(resolved_config.data_root)
+    studio.initialize()
+    app.state.studio = studio
+    app.state.project_store = studio
+    app.state.job_store = SqliteJobStore(studio)
 
     def default_generation_worker(job):
         credentials = resolved_store.get()
@@ -80,11 +80,11 @@ def create_app(
             "mp3": "audio/mpeg",
             "pcm": "application/octet-stream",
         }[job.params.format]
-        asset = app.state.asset_registry.register(result["path"], mime_type)
+        asset = studio.register_asset(result["path"], mime_type, owner_id=job.id)
         for item in references:
             app.state.reference_registry.cleanup(item.id)
         return {
-            "output_asset_id": asset.id,
+            "output_asset_id": asset["id"],
             "elapsed_seconds": result["elapsed_seconds"],
             "report": result["report"],
         }
@@ -96,6 +96,7 @@ def create_app(
     )
 
     app.add_middleware(LocalSecurityMiddleware, csrf_token=resolved_csrf)
+    install_error_handlers(app)
 
     @app.get("/api/health")
     def health():

@@ -1,18 +1,67 @@
 import {
   DEFAULT_PARAMS,
   type CreateJobRequest,
+  type DraftFields,
   type Job,
   type PreparedReference,
-  type Project
+  type Project,
+  type ReferenceBinding,
+  type TemplateApplication
 } from "./types";
+
+export class ApiError extends Error {
+  code: string;
+  status: number;
+  field: string | null;
+  details: Record<string, unknown>;
+
+  constructor(
+    message: string,
+    options: {
+      code?: string;
+      status?: number;
+      field?: string | null;
+      details?: Record<string, unknown>;
+    } = {}
+  ) {
+    super(message);
+    this.name = "ApiError";
+    this.code = options.code || "UNKNOWN";
+    this.status = options.status || 0;
+    this.field = options.field ?? null;
+    this.details = options.details || {};
+  }
+}
 
 let csrfToken = "";
 let sessionRequest: Promise<Awaited<ReturnType<typeof getSession>>> | null = null;
 
+function describeFastApiDetail(detail: unknown): string {
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    const first = detail[0] as {loc?: unknown[]; msg?: string} | undefined;
+    const field = Array.isArray(first?.loc) ? String(first!.loc!.slice(-1)[0]) : "";
+    return field ? `${field} 填写有误：${first?.msg || "请检查后重试"}` : "提交的内容有误，请检查后重试。";
+  }
+  return "请求失败";
+}
+
 async function parse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const body = await response.json().catch(() => ({detail: response.statusText}));
-    throw new Error(body.detail || "请求失败");
+    const error = body?.error;
+    if (error && typeof error === "object") {
+      throw new ApiError(error.message || "请求失败", {
+        code: error.code,
+        status: response.status,
+        field: error.field ?? null,
+        details: error.details || {}
+      });
+    }
+    throw new ApiError(describeFastApiDetail(body?.detail) || "请求失败", {
+      code: response.status === 422 ? "INVALID_PARAMS" : "HTTP_ERROR",
+      status: response.status
+    });
   }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
@@ -70,42 +119,135 @@ export async function deleteReference(id: string): Promise<void> {
   );
 }
 
-export async function createProject(input: {
-  name: string;
-  mode: string;
-  prompt: string;
-  params: unknown;
-}) {
+export type ProjectPatch = Partial<DraftFields> & {name?: string; mode?: string};
+
+function toServerDraft(input: ProjectPatch): Record<string, unknown> {
+  const body: Record<string, unknown> = {};
+  if (input.name !== undefined) body.name = input.name;
+  if (input.mode !== undefined) body.mode = input.mode;
+  if (input.prompt !== undefined) body.prompt = input.prompt;
+  if (input.params !== undefined) body.params = toServerParams(input.params);
+  if (input.referenceBindings !== undefined) {
+    body.reference_bindings = input.referenceBindings.map((item) => ({
+      reference_id: item.referenceId,
+      alias: item.alias
+    }));
+  }
+  if (input.outputDirectoryId !== undefined) {
+    body.output_directory_id = input.outputDirectoryId;
+  }
+  if (input.templateApplication !== undefined) {
+    body.template_application = input.templateApplication
+      ? {
+          template_id: input.templateApplication.templateId,
+          template_version: input.templateApplication.templateVersion,
+          values: input.templateApplication.values
+        }
+      : null;
+  }
+  return body;
+}
+
+function toServerParams(params: DraftFields["params"]) {
+  return {
+    format: params.format,
+    sample_rate: params.sampleRate,
+    channels: params.channels,
+    volume: params.volume,
+    rate: params.rate,
+    seed: params.seed,
+    enable_cbr: params.enableCbr,
+    bit_rate: params.bitRate,
+    quality: params.quality,
+    enable_aigc_tag: params.enableAigcTag
+  };
+}
+
+export async function createProject(input: ProjectPatch): Promise<Project> {
   await ensureSession();
-  return parse<{id: string}>(
-    await fetch("/api/projects", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Qwen-Studio-CSRF": csrfToken
-      },
-      body: JSON.stringify(input)
-    })
+  return mapProject(
+    await parse<Record<string, any>>(
+      await fetch("/api/projects", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Qwen-Studio-CSRF": csrfToken
+        },
+        body: JSON.stringify(toServerDraft(input))
+      })
+    )
   );
 }
 
 export async function getProject(id: string): Promise<Project> {
-  const value = await parse<Record<string, any>>(await fetch("/api/projects/" + encodeURIComponent(id)));
+  const value = await parse<Record<string, any>>(
+    await fetch("/api/projects/" + encodeURIComponent(id))
+  );
   return mapProject(value);
 }
 
-export async function updateProject(id: string, input: {
-  name: string;
-  mode: string;
-  prompt: string;
-  params: unknown;
-}): Promise<void> {
+export async function saveProject(
+  id: string,
+  expectedRevision: number,
+  changes: ProjectPatch
+): Promise<Project> {
   await ensureSession();
-  await parse(await fetch("/api/projects/" + encodeURIComponent(id), {
-    method: "PATCH",
-    headers: {"Content-Type": "application/json", "X-Qwen-Studio-CSRF": csrfToken},
-    body: JSON.stringify(input)
-  }));
+  return mapProject(
+    await parse<Record<string, any>>(
+      await fetch("/api/projects/" + encodeURIComponent(id), {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Qwen-Studio-CSRF": csrfToken
+        },
+        body: JSON.stringify({
+          ...toServerDraft(changes),
+          expected_revision: expectedRevision
+        })
+      })
+    )
+  );
+}
+
+export async function duplicateProject(
+  id: string,
+  name?: string
+): Promise<Project> {
+  await ensureSession();
+  return mapProject(
+    await parse<Record<string, any>>(
+      await fetch(
+        `/api/projects/${encodeURIComponent(id)}/duplicate`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Qwen-Studio-CSRF": csrfToken
+          },
+          body: JSON.stringify(name ? {name} : {})
+        }
+      )
+    )
+  );
+}
+
+export async function archiveProject(
+  id: string,
+  archived: boolean
+): Promise<Project> {
+  await ensureSession();
+  return mapProject(
+    await parse<Record<string, any>>(
+      await fetch(`/api/projects/${encodeURIComponent(id)}/archive`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Qwen-Studio-CSRF": csrfToken
+        },
+        body: JSON.stringify({archived})
+      })
+    )
+  );
 }
 
 export async function createJob(input: CreateJobRequest) {
@@ -218,8 +360,23 @@ function mapProject(value: Record<string, any>): Project {
     id: value.id,
     name: value.name,
     mode: value.mode,
-    prompt: value.prompt,
+    prompt: value.prompt ?? "",
     params: mapParams(value.params || {}),
+    referenceBindings: (value.reference_bindings || []).map(
+      (item: Record<string, unknown>): ReferenceBinding => ({
+        referenceId: String(item.reference_id ?? ""),
+        alias: String(item.alias ?? "")
+      })
+    ),
+    templateApplication: value.template_application
+      ? {
+          templateId: String(value.template_application.template_id),
+          templateVersion: Number(value.template_application.template_version),
+          values: value.template_application.values || {}
+        }
+      : null,
+    outputDirectoryId: value.output_directory_id ?? null,
+    revision: Number(value.revision ?? 1),
     createdAt: value.created_at,
     updatedAt: value.updated_at,
     archived: Boolean(value.archived),
@@ -232,16 +389,21 @@ export async function listProjects(): Promise<Project[]> {
   return values.map(mapProject);
 }
 
-export async function setProjectFinalJob(projectId: string, jobId: string): Promise<void> {
+export async function setProjectFinalJob(
+  projectId: string,
+  jobId: string
+): Promise<Project> {
   await ensureSession();
-  await parse(
-    await fetch("/api/projects/" + encodeURIComponent(projectId), {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Qwen-Studio-CSRF": csrfToken
-      },
-      body: JSON.stringify({final_job_id: jobId})
-    })
+  return mapProject(
+    await parse<Record<string, any>>(
+      await fetch(`/api/projects/${encodeURIComponent(projectId)}/final-version`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Qwen-Studio-CSRF": csrfToken
+        },
+        body: JSON.stringify({job_id: jobId})
+      })
+    )
   );
 }

@@ -105,7 +105,12 @@ class JobApiTests(unittest.TestCase):
                     handle.setframerate(16000)
                     handle.writeframes(b"\x00\x00" * 16000)
                 prepared = client.post("/api/references/prepare", headers=self.headers, files={"file": ("voice.wav", wav.getvalue(), "audio/wav")}).json()
-                payload = {"project_id": "project", "project_name": "参考重试", "mode": "narration", "prompt": "@voice1 你好", "references": [{"id": prepared["id"], "consent_token": prepared["consent_token"]}]}
+                project_id = client.post(
+                    "/api/projects",
+                    headers=self.headers,
+                    json={"name": "参考重试", "mode": "narration", "prompt": "@voice1 你好"},
+                ).json()["id"]
+                payload = {"project_id": project_id, "project_name": "参考重试", "mode": "narration", "prompt": "@voice1 你好", "references": [{"id": prepared["id"], "consent_token": prepared["consent_token"]}]}
                 created = client.post("/api/jobs", headers=self.headers, json=payload).json()
                 app.state.job_manager.wait(created["id"], timeout=5)
                 self.assertEqual(app.state.job_store.get(created["id"]).status, "failed")

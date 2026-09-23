@@ -31,12 +31,20 @@ class MediaApiTests(unittest.TestCase):
     def test_registered_media_can_be_read(self):
         media = Path(self.temp_dir.name) / "audio.mp3"
         media.write_bytes(b"ID3audio")
-        asset = self.client.app.state.asset_registry.register(media, "audio/mpeg")
+        asset = self.client.app.state.studio.register_asset(media, "audio/mpeg")
 
-        response = self.client.get(f"/api/media/{asset.id}")
+        response = self.client.get(f"/api/media/{asset['id']}")
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content, b"ID3audio")
+
+    def test_media_reports_gone_when_the_registered_file_disappears(self) -> None:
+        media = Path(self.temp_dir.name) / "moved.mp3"
+        media.write_bytes(b"ID3audio")
+        asset = self.client.app.state.studio.register_asset(media, "audio/mpeg")
+        media.unlink()
+
+        self.assertEqual(self.client.get(f"/api/media/{asset['id']}").status_code, 410)
 
     def test_media_rejects_unknown_or_traversal_id(self):
         self.assertEqual(self.client.get("/api/media/unknown").status_code, 404)

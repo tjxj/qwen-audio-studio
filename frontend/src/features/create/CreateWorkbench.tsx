@@ -2,8 +2,9 @@ import {useMemo, useRef, useState} from "react";
 import {BookOpenText, Lightbulb, X} from "lucide-react";
 import {
   DEFAULT_PARAMS,
+  SAVE_STATE_LABELS,
   type CreateJobRequest,
-  type CreationMode,
+  type DraftFields,
   type GenerationParams,
   type PreparedReference,
   type Project
@@ -15,6 +16,7 @@ import {ModeSelector} from "./ModeSelector";
 import {PromptTagToolbar} from "./PromptTagToolbar";
 import {ReferenceAudioRack} from "./ReferenceAudioRack";
 import {inspirationTemplates, modeProfiles} from "./templates";
+import type {ProjectDraftController} from "./useProjectDraft";
 
 const initialPrompt = inspirationTemplates[0].prompt;
 
@@ -39,8 +41,10 @@ export interface CreateWorkbenchProps {
   onJobCreated: (id: string) => void;
   onPrepareReference?: (file: File) => Promise<PreparedReference>;
   onDeleteReference?: (id: string) => Promise<void>;
+  onNewProject?: () => void;
   initialReferences?: PreparedReference[];
   initialProject?: Project;
+  draft?: ProjectDraftController;
 }
 
 export default function CreateWorkbench({
@@ -49,56 +53,70 @@ export default function CreateWorkbench({
   onJobCreated,
   onPrepareReference,
   onDeleteReference,
+  onNewProject,
   initialReferences = [],
-  initialProject
+  initialProject,
+  draft
 }: CreateWorkbenchProps) {
-  const [projectName, setProjectName] = useState(initialProject?.name || "未命名声音场景");
-  const [mode, setMode] = useState<CreationMode>(initialProject?.mode || "podcast");
-  const [prompt, setPrompt] = useState(initialProject?.prompt || initialPrompt);
-  const [params, setParams] = useState<GenerationParams>(initialProject?.params || DEFAULT_PARAMS);
+  const [localForm, setLocalForm] = useState<DraftFields>({
+    name: initialProject?.name || "未命名声音场景",
+    mode: initialProject?.mode || "podcast",
+    prompt: initialProject?.prompt || initialPrompt,
+    params: initialProject?.params || DEFAULT_PARAMS,
+    referenceBindings: initialProject?.referenceBindings || [],
+    outputDirectoryId: initialProject?.outputDirectoryId ?? null,
+    templateApplication: initialProject?.templateApplication ?? null
+  });
+  const form = draft ? draft.fields : localForm;
+  const update = (patch: Partial<DraftFields>) => {
+    if (draft) draft.change(patch);
+    else setLocalForm((current) => ({...current, ...patch}));
+  };
+
   const [references, setReferences] = useState(initialReferences);
   const [preparingReference, setPreparingReference] = useState(false);
   const [confirmingReferences, setConfirmingReferences] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const editorRef = useRef<HTMLTextAreaElement>(null);
-  const remaining = 3000 - prompt.length;
+  const remaining = 3000 - form.prompt.length;
   const visibleTemplates = useMemo(
-    () => inspirationTemplates.filter((template) => template.mode === mode),
-    [mode]
+    () => inspirationTemplates.filter((template) => template.mode === form.mode),
+    [form.mode]
   );
-  const profile = modeProfiles[mode];
+  const profile = modeProfiles[form.mode];
 
   const canGenerate = useMemo(
-    () => credentialsReady && prompt.trim().length > 0 && remaining >= 0,
-    [credentialsReady, prompt, remaining]
+    () => credentialsReady && form.prompt.trim().length > 0 && remaining >= 0,
+    [credentialsReady, form.prompt, remaining]
   );
 
   const applyTag = (tag: PromptTag) => {
     const textarea = editorRef.current;
     const selection = {
-      start: textarea?.selectionStart ?? prompt.length,
-      end: textarea?.selectionEnd ?? prompt.length
+      start: textarea?.selectionStart ?? form.prompt.length,
+      end: textarea?.selectionEnd ?? form.prompt.length
     };
-    const update = insertTag(prompt, selection, tag);
-    setPrompt(update.text);
+    const next = insertTag(form.prompt, selection, tag);
+    update({prompt: next.text});
     requestAnimationFrame(() => {
       textarea?.focus();
-      textarea?.setSelectionRange(update.selection.start, update.selection.end);
+      textarea?.setSelectionRange(next.selection.start, next.selection.end);
     });
   };
 
-  const changeMode = (nextMode: CreationMode) => {
+  const changeMode = (nextMode: DraftFields["mode"]) => {
     const promptComesFromTemplate = inspirationTemplates.some(
-      (template) => template.prompt === prompt
+      (template) => template.prompt === form.prompt
     );
-    setMode(nextMode);
+    const patch: Partial<DraftFields> = {mode: nextMode};
     if (promptComesFromTemplate) {
       const starter = inspirationTemplates.find(
         (template) => template.mode === nextMode
       );
-      if (starter) setPrompt(starter.prompt);
+      if (starter) patch.prompt = starter.prompt;
     }
+    update(patch);
   };
 
   const submit = async () => {
@@ -106,11 +124,11 @@ export default function CreateWorkbench({
     setError("");
     try {
       const result = await onSubmit({
-        project_id: initialProject?.id || "local-draft",
-        project_name: projectName.trim() || "未命名声音场景",
-        mode,
-        prompt,
-        params: toApiParams(params),
+        project_id: draft?.projectId || initialProject?.id || "local-draft",
+        project_name: form.name.trim() || "未命名声音场景",
+        mode: form.mode,
+        prompt: form.prompt,
+        params: toApiParams(form.params),
         references: references.map((item) => ({
           id: item.id,
           consent_token: item.consent_token
@@ -150,10 +168,50 @@ export default function CreateWorkbench({
   return (
     <div className="create-workbench">
       <div className="draft-heading">
-        <label>场景名称<input aria-label="场景名称" value={projectName} maxLength={120} onChange={(event) => setProjectName(event.target.value)} /></label>
-        {initialProject ? <span>正在续作 · 新结果会归入同一项目</span> : <span>首次生成后自动创建本地项目</span>}
+        <label>
+          场景名称
+          <input
+            aria-label="场景名称"
+            value={form.name}
+            maxLength={120}
+            onChange={(event) => update({name: event.target.value})}
+          />
+        </label>
+        <span data-testid="save-state">{SAVE_STATE_LABELS[draft?.state || "clean"]}</span>
+        {onNewProject ? (
+          <button type="button" onClick={onNewProject}>
+            新建项目
+          </button>
+        ) : null}
+        {draft?.projectId ? (
+          <span>正在续作 · 新结果会归入同一项目</span>
+        ) : (
+          <span>编辑后自动保存为本地草稿</span>
+        )}
       </div>
-      <ModeSelector value={mode} onChange={changeMode} />
+      {draft?.conflict ? (
+        <div className="inline-error" role="alert">
+          <span>{draft.message}</span>
+          <button type="button" onClick={() => void draft.resolveConflictByReload()}>
+            载入最新版本
+          </button>
+          <button type="button" onClick={() => void draft.resolveConflictByCopy()}>
+            另存为副本
+          </button>
+        </div>
+      ) : null}
+      {draft?.recovered ? (
+        <div className="inline-error" role="status">
+          <span>发现上次未保存的本地副本。</span>
+          <button type="button" onClick={draft.applyRecovered}>
+            恢复本地副本
+          </button>
+          <button type="button" onClick={draft.dismissRecovered}>
+            丢弃
+          </button>
+        </div>
+      ) : null}
+      <ModeSelector value={form.mode} onChange={changeMode} />
       <section className="mode-context" aria-live="polite">
         <div><span>当前工作流</span><h2>{profile.title}</h2></div>
         <strong>{profile.description}</strong>
@@ -164,21 +222,21 @@ export default function CreateWorkbench({
           <div className="editor-header">
             <PromptTagToolbar onInsert={applyTag} />
             <span className={remaining < 0 ? "char-count is-error" : "char-count"}>
-              {prompt.length} / 3000
+              {form.prompt.length} / 3000
             </span>
           </div>
           <div className="editor-canvas">
             <div className="line-numbers" aria-hidden="true">
-              {Array.from({length: Math.max(14, prompt.split("\n").length)}, (_, index) => (
+              {Array.from({length: Math.max(14, form.prompt.split("\n").length)}, (_, index) => (
                 <span key={index}>{index + 1}</span>
               ))}
             </div>
             <textarea
               ref={editorRef}
               aria-label="场景提示词"
-              value={prompt}
+              value={form.prompt}
               spellCheck={false}
-              onChange={(event) => setPrompt(event.target.value)}
+              onChange={(event) => update({prompt: event.target.value})}
             />
           </div>
           <section className="inspiration-section">
@@ -193,8 +251,7 @@ export default function CreateWorkbench({
                   className="template-card"
                   key={template.id}
                   onClick={() => {
-                    setMode(template.mode);
-                    setPrompt(template.prompt);
+                    update({mode: template.mode, prompt: template.prompt});
                   }}
                 >
                   <div className="template-art" aria-hidden="true">
@@ -221,7 +278,10 @@ export default function CreateWorkbench({
             }}
             busy={preparingReference}
           />
-          <GenerationInspector value={params} onChange={setParams} />
+          <GenerationInspector
+            value={form.params}
+            onChange={(params) => update({params})}
+          />
         </aside>
       </div>
       {error ? <div className="inline-error" role="alert">{error}</div> : null}

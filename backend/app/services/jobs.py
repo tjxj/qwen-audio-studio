@@ -1,29 +1,98 @@
 from __future__ import annotations
 
-import re
 from concurrent.futures import Future, ThreadPoolExecutor
 from threading import RLock
 from typing import Callable
 
-from app.models import JobCreate, JobRecord
-from app.services.storage import JobStore
+from app.models import JobCreate, JobRecord, ReferenceConsent
+from app.services.storage import JobStore, sanitize_error
+from app.services.studio_store import StudioStore
 
 
-def sanitize_error(value: str) -> str:
-    value = re.sub(r"sk-[A-Za-z0-9]{12,}", "<redacted>", value)
-    value = re.sub(r"llm-[A-Za-z0-9-]{8,}", "<redacted>", value)
-    value = re.sub(
-        r"data:audio/[A-Za-z0-9.+-]+;base64,[A-Za-z0-9+/=_-]+",
-        "<redacted audio data>",
-        value,
-    )
-    return value[-2000:]
+class SqliteJobStore:
+    """JobStore-shaped facade over the V2 tables so jobs have one source of truth.
+
+    Upload consent tokens stay in this process only; persisted rows keep reference
+    ids, so a retry after a restart has to re-confirm the upload.
+    """
+
+    def __init__(self, store: StudioStore) -> None:
+        self.store = store
+        self.lock = RLock()
+        self._live_references: dict[str, list[ReferenceConsent]] = {}
+
+    def create(self, payload: JobCreate) -> JobRecord:
+        row = self.store.create_job(
+            {
+                "project_id": payload.project_id,
+                "project_name": payload.project_name,
+                "mode": payload.mode,
+                "prompt": payload.prompt,
+                "params": payload.params.model_dump(mode="json"),
+                "reference_snapshot": [
+                    {
+                        "reference_id": item.id,
+                        "name": item.id,
+                        "requires_reconfirmation": False,
+                    }
+                    for item in payload.references
+                ],
+                "status": "queued",
+            }
+        )
+        with self.lock:
+            self._live_references[row["id"]] = list(payload.references)
+        return self._record(row)
+
+    def get(self, job_id: str) -> JobRecord:
+        return self._record(self.store.get_job(job_id))
+
+    def update(self, job_id: str, changes: dict) -> JobRecord:
+        return self._record(self.store.update_job(job_id, changes))
+
+    def list(self) -> list[JobRecord]:
+        return [self._record(row) for row in self.store.list_jobs()]
+
+    def recover_interrupted(self) -> None:
+        for row in self.store.list_jobs():
+            if row["status"] in {"queued", "running"}:
+                self.store.mark_interrupted(row["id"])
+        with self.lock:
+            self._live_references.clear()
+
+    def _record(self, row: dict) -> JobRecord:
+        with self.lock:
+            live = self._live_references.get(row["id"])
+        references = live or [
+            ReferenceConsent(
+                id=item.get("reference_id") or "",
+                consent_token=item.get("consent_token") or "",
+            )
+            for item in row["reference_snapshot"]
+        ]
+        error = row["error"]
+        return JobRecord(
+            id=row["id"],
+            project_id=row["project_id"],
+            project_name=row["project_name"],
+            mode=row["mode"],
+            prompt=row["prompt"],
+            params=row["params"],
+            references=references,
+            status=row["status"],
+            created_at=row["created_at"],
+            updated_at=row["updated_at"],
+            elapsed_seconds=row["elapsed_seconds"],
+            output_asset_id=row["output_asset_id"],
+            error=error["message"] if isinstance(error, dict) else error,
+            report=row["report"],
+        )
 
 
 class JobManager:
     def __init__(
         self,
-        store: JobStore,
+        store: "JobStore | SqliteJobStore",
         worker: Callable[[JobRecord], dict],
         max_workers: int = 2,
     ):

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 CreationMode = Literal[
@@ -42,11 +42,25 @@ class ReferenceConsent(BaseModel):
     consent_token: str
 
 
+class ReferenceBinding(BaseModel):
+    reference_id: str
+    alias: str = ""
+
+
+class TemplateApplication(BaseModel):
+    template_id: str
+    template_version: int = Field(ge=1)
+    values: dict[str, str | int | float] = Field(default_factory=dict)
+
+
 class ProjectCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     mode: CreationMode
     prompt: str = Field(default="", max_length=3000)
     params: GenerationParams = Field(default_factory=GenerationParams)
+    reference_bindings: list[ReferenceBinding] = Field(default_factory=list, max_length=3)
+    output_directory_id: Optional[str] = None
+    template_application: Optional[TemplateApplication] = None
 
 
 class ProjectRecord(ProjectCreate):
@@ -55,6 +69,46 @@ class ProjectRecord(ProjectCreate):
     updated_at: str
     archived: bool = False
     final_job_id: Optional[str] = None
+
+
+class ProjectDraft(ProjectRecord):
+    revision: int = Field(default=1, ge=1)
+
+
+class ProjectPatch(BaseModel):
+    """Whitelisted draft edits; ``expected_revision`` drives optimistic locking."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    expected_revision: int = Field(ge=1)
+    name: Optional[str] = Field(default=None, min_length=1, max_length=120)
+    mode: Optional[CreationMode] = None
+    prompt: Optional[str] = Field(default=None, max_length=3000)
+    params: Optional[GenerationParams] = None
+    reference_bindings: Optional[list[ReferenceBinding]] = Field(
+        default=None, max_length=3
+    )
+    output_directory_id: Optional[str] = None
+    template_application: Optional[TemplateApplication] = None
+    archived: Optional[bool] = None
+
+
+class ProjectDuplicate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: Optional[str] = Field(default=None, min_length=1, max_length=120)
+
+
+class ProjectArchive(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    archived: bool
+
+
+class ProjectFinalVersion(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    job_id: str
 
 
 class JobCreate(BaseModel):

@@ -13,11 +13,26 @@ from app.models import JobCreate, JobRecord, ProjectCreate, ProjectRecord, utc_n
 SAFE_ID = re.compile(r"^[A-Za-z0-9_-]+$")
 RecordT = TypeVar("RecordT")
 
+SECRET_PATTERNS = (
+    (re.compile(r"sk-[A-Za-z0-9]{12,}"), "<redacted>"),
+    (re.compile(r"llm-[A-Za-z0-9-]{8,}"), "<redacted>"),
+    (
+        re.compile(r"data:audio/[A-Za-z0-9.+-]+;base64,[A-Za-z0-9+/=_-]+"),
+        "<redacted audio data>",
+    ),
+)
+
 
 def require_safe_id(value: str) -> str:
     if not SAFE_ID.fullmatch(value):
         raise ValueError("Invalid identifier")
     return value
+
+
+def sanitize_error(value: str) -> str:
+    for pattern, replacement in SECRET_PATTERNS:
+        value = pattern.sub(replacement, value)
+    return value[-2000:]
 
 
 class JsonRecordStore(Generic[RecordT]):

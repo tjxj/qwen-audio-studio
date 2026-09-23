@@ -129,7 +129,7 @@ describe("creation workbench", () => {
   it("continues an existing project for additional seed versions", async () => {
     const onSubmit = vi.fn().mockResolvedValue({id: "job-next"});
     const user = userEvent.setup();
-    render(<CreateWorkbench credentialsReady initialProject={{id:"project-1",name:"续作项目",mode:"narration",prompt:"旧稿",params:DEFAULT_PARAMS,createdAt:"",updatedAt:"",archived:false}} onSubmit={onSubmit} onJobCreated={vi.fn()} />);
+    render(<CreateWorkbench credentialsReady initialProject={{id:"project-1",name:"续作项目",mode:"narration",prompt:"旧稿",params:DEFAULT_PARAMS,referenceBindings:[],templateApplication:null,outputDirectoryId:null,revision:3,createdAt:"",updatedAt:"",archived:false}} onSubmit={onSubmit} onJobCreated={vi.fn()} />);
     expect(screen.getByLabelText("场景名称")).toHaveValue("续作项目");
     expect(screen.getByLabelText("场景提示词")).toHaveValue("旧稿");
     await user.click(screen.getByRole("button", {name:"生成音频"}));

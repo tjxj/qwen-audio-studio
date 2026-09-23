@@ -61,17 +61,60 @@ export interface ValidationReport {
   sha256?: string;
 }
 
+export interface ReferenceBinding {
+  referenceId: string;
+  alias: string;
+}
+
+export interface TemplateApplication {
+  templateId: string;
+  templateVersion: number;
+  values: Record<string, string | number>;
+}
+
 export interface Project {
   id: string;
   name: string;
   mode: CreationMode;
   prompt: string;
   params: GenerationParams;
+  referenceBindings: ReferenceBinding[];
+  templateApplication: TemplateApplication | null;
+  outputDirectoryId: string | null;
+  revision: number;
   createdAt: string;
   updatedAt: string;
   archived: boolean;
   finalJobId?: string;
 }
+
+/** Fields the draft editor owns; every one of them is persisted on autosave. */
+export interface DraftFields {
+  name: string;
+  mode: CreationMode;
+  prompt: string;
+  params: GenerationParams;
+  referenceBindings: ReferenceBinding[];
+  outputDirectoryId: string | null;
+  templateApplication: TemplateApplication | null;
+}
+
+export type SaveState =
+  | "clean"
+  | "dirty"
+  | "saving"
+  | "saved"
+  | "failed"
+  | "conflict";
+
+export const SAVE_STATE_LABELS: Record<SaveState, string> = {
+  clean: "已保存",
+  dirty: "未保存",
+  saving: "保存中",
+  saved: "已保存",
+  failed: "保存失败",
+  conflict: "保存冲突"
+};
 
 export interface Job {
   id: string;
