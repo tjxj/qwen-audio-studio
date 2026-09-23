@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.capabilities import router as capabilities_router
+from app.api.diagnostics import router as diagnostics_router
 from app.api.jobs import router as jobs_router
 from app.api.media import router as media_router
 from app.api.projects import router as projects_router
@@ -18,10 +19,14 @@ from app.config import AppConfig
 from app.errors import install_error_handlers
 from app.security import LocalSecurityMiddleware
 from app.services.keychain import CredentialStore, SystemKeychainStore
+from app.services.preferences import PreferenceService
 from app.services.qwen_adapter import QwenAdapter
 from app.services.references import ReferenceRegistry
 from app.services.jobs import JobManager, SqliteJobStore
 from app.services.studio_store import StudioStore
+
+
+APP_VERSION = "2.0.0-dev"
 
 
 def create_app(
@@ -58,6 +63,7 @@ def create_app(
     studio = studio_store or StudioStore(resolved_config.data_root)
     studio.initialize()
     app.state.studio = studio
+    app.state.preferences = PreferenceService(studio)
     app.state.project_store = studio
     app.state.job_store = SqliteJobStore(studio)
 
@@ -110,10 +116,12 @@ def create_app(
     def session(request: Request):
         return {
             "csrf_token": request.app.state.csrf_token,
+            "app_version": APP_VERSION,
             "credentials": request.app.state.credential_store.status().model_dump(),
         }
 
     app.include_router(settings_router)
+    app.include_router(diagnostics_router)
     app.include_router(capabilities_router)
     app.include_router(references_router)
     app.include_router(projects_router)

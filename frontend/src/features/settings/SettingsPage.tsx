@@ -1,50 +1,392 @@
-import {KeyRound, Save, ShieldCheck, Trash2} from "lucide-react";
-import {useState} from "react";
+import {useCallback, useEffect, useState} from "react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  ExternalLink,
+  KeyRound,
+  Loader2,
+  SlidersHorizontal,
+  Trash2
+} from "lucide-react";
+import {
+  ApiError,
+  deleteCredentials,
+  getDiagnostics,
+  getSettings,
+  patchCredentials,
+  patchSettings,
+  type Diagnostics
+} from "../../api";
 import type {CredentialStatus} from "../../types";
+import {helpLinks, modelBoundary} from "../../config/helpLinks";
 
-export default function SettingsPage({
-  status,
-  ready = true,
-  onSave,
-  onClear
-}: {
+type Feedback = {kind: "success" | "error" | "info"; text: string} | null;
+
+type Busy = "" | "api-key" | "workspace" | "appearance" | "clear" | "diagnostics";
+
+const SCRIPT_FONTS = [
+  {value: "serif", label: "宋体阅读（思源宋体）"},
+  {value: "sans", label: "系统无衬线"}
+];
+const FONT_SIZES = [14, 16, 18];
+
+function errorText(reason: unknown, fallback: string) {
+  if (reason instanceof ApiError) return reason.message;
+  return reason instanceof Error ? reason.message : fallback;
+}
+
+export default function SettingsPage(props: {
   status: CredentialStatus;
-  ready?: boolean;
-  onSave: (apiKey: string, workspaceId: string) => Promise<void>;
-  onClear: () => void;
+  ready: boolean;
+  refreshStatus: () => void | Promise<void>;
 }) {
+  const {status, ready, refreshStatus} = props;
   const [apiKey, setApiKey] = useState("");
   const [workspaceId, setWorkspaceId] = useState("");
-  const [saved, setSaved] = useState(false);
+  const [revealApiKey, setRevealApiKey] = useState(false);
+  const [revealWorkspace, setRevealWorkspace] = useState(false);
+  const [feedback, setFeedback] = useState<Feedback>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [busy, setBusy] = useState<Busy>("");
+  const [settings, setSettings] = useState<Awaited<ReturnType<typeof getSettings>> | null>(null);
+  const [font, setFont] = useState("serif");
+  const [fontSize, setFontSize] = useState(16);
+  const [workers, setWorkers] = useState(2);
+  const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
 
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    await onSave(apiKey, workspaceId);
-    setApiKey("");
-    setWorkspaceId("");
-    setSaved(true);
-  };
+  useEffect(() => {
+    getSettings()
+      .then((value) => {
+        setSettings(value);
+        setFont(value.script_font);
+        setFontSize(value.script_font_size);
+        setWorkers(value.max_workers);
+      })
+      .catch((reason) => setFeedback({kind: "error", text: errorText(reason, "读取设置失败")}));
+  }, []);
+
+  const saveField = useCallback(
+    async (field: "api-key" | "workspace") => {
+      setBusy(field);
+      setFeedback(null);
+      try {
+        if (field === "api-key") {
+          await patchCredentials({apiKey});
+          setApiKey("");
+        } else {
+          await patchCredentials({workspaceId});
+          setWorkspaceId("");
+        }
+        const session = await getSettings().catch(() => null);
+        if (session) setSettings(session);
+        await refreshStatus();
+        setFeedback({kind: "success", text: "已写入 macOS 钥匙串。"});
+      } catch (reason) {
+        setFeedback({kind: "error", text: errorText(reason, "凭据保存失败")});
+      } finally {
+        setBusy("");
+      }
+    },
+    [apiKey, workspaceId, refreshStatus]
+  );
+
+  const saveAppearance = useCallback(async () => {
+    if (!settings) return;
+    setBusy("appearance");
+    setFeedback(null);
+    try {
+      const next = await patchSettings({
+        expected_revision: settings.revision,
+        script_font: font,
+        script_font_size: fontSize,
+        max_workers: workers
+      });
+      setSettings(next);
+      setFeedback({kind: "success", text: "外观与并发设置已保存。"});
+    } catch (reason) {
+      if (reason instanceof ApiError && reason.code === "REVISION_CONFLICT") {
+        const fresh = await getSettings().catch(() => null);
+        if (fresh) setSettings(fresh);
+        setFeedback({kind: "error", text: "设置已在别处修改，已载入最新版本。"});
+      } else {
+        setFeedback({kind: "error", text: errorText(reason, "设置保存失败")});
+      }
+    } finally {
+      setBusy("");
+    }
+  }, [settings, font, fontSize, workers]);
+
+  const clear = useCallback(
+    async (scope: "all" | "api_key" | "workspace_id") => {
+      setBusy("clear");
+      setFeedback(null);
+      try {
+        await deleteCredentials(scope);
+        await refreshStatus();
+        setFeedback({kind: "success", text: "凭据已从钥匙串清除。"});
+      } catch (reason) {
+        setFeedback({kind: "error", text: errorText(reason, "清除失败")});
+      } finally {
+        setBusy("");
+        setConfirmClear(false);
+      }
+    },
+    [refreshStatus]
+  );
+
+  const runDiagnostics = useCallback(async () => {
+    setBusy("diagnostics");
+    setFeedback(null);
+    try {
+      setDiagnostics(await getDiagnostics());
+    } catch (reason) {
+      setFeedback({kind: "error", text: errorText(reason, "本地检查未完成")});
+    } finally {
+      setBusy("");
+    }
+  }, []);
 
   return (
     <section className="settings-page">
-      <header><div><span>只保存在此设备</span><h1>设置</h1></div><KeyRound size={25} /></header>
-      <div className="security-summary">
-        <ShieldCheck size={20} />
-        <div><strong>macOS 钥匙串保护</strong><p>凭据不会进入浏览器存储、项目文件、日志或生成报告。</p></div>
-      </div>
-      <form onSubmit={(event) => void submit(event)}>
-        <label><span>API Key</span><input aria-label="API Key" type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder={status.apiKeyConfigured ? "已配置，输入新值可替换" : "输入北京地域 API Key"} required /></label>
-        <label><span>Workspace ID</span><input aria-label="Workspace ID" type="password" value={workspaceId} onChange={(event) => setWorkspaceId(event.target.value)} placeholder={status.workspaceConfigured ? "已配置，输入新值可替换" : "输入业务空间 ID"} required /></label>
+      <header>
+        <div><span>只保存在此设备</span><h1>设置</h1></div>
+        <KeyRound size={25} />
+      </header>
+      {feedback ? (
+        <p className={`settings-feedback is-${feedback.kind}`} role="status">
+          {feedback.kind === "success" ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+          {feedback.text}
+        </p>
+      ) : null}
+
+      <div className="settings-group">
+        <h2>百炼连接</h2>
+        <p className="settings-note">
+          应用在本机运行；生成时文本和已确认的参考音频会发送至阿里云百炼。
+          模型 {modelBoundary.id} 需在{modelBoundary.region}开通后才会返回结果。
+        </p>
+
+        <Field
+          label="API Key"
+          value={apiKey}
+          configured={status.apiKeyConfigured}
+          revealed={revealApiKey}
+          busy={busy === "api-key"}
+          ready={ready}
+          helpHref={helpLinks.apiKey}
+          helpText="如何获取 API Key"
+          onChange={setApiKey}
+          onToggleReveal={() => setRevealApiKey((value) => !value)}
+          onSave={() => void saveField("api-key")}
+        />
+
+        <Field
+          label="业务空间 ID（Workspace ID）"
+          value={workspaceId}
+          configured={status.workspaceConfigured}
+          revealed={revealWorkspace}
+          busy={busy === "workspace"}
+          ready={ready}
+          helpHref={helpLinks.workspaceId}
+          helpText="如何获取 Workspace ID"
+          onChange={setWorkspaceId}
+          onToggleReveal={() => setRevealWorkspace((value) => !value)}
+          onSave={() => void saveField("workspace")}
+        />
+
         <div className="credential-status">
-          <span className={status.apiKeyConfigured ? "ready" : ""}>API Key {status.apiKeyConfigured ? "已配置" : "未配置"}</span>
-          <span className={status.workspaceConfigured ? "ready" : ""}>Workspace ID {status.workspaceConfigured ? "已配置" : "未配置"}</span>
+          <span className={status.apiKeyConfigured ? "ready" : ""}>
+            API Key {status.apiKeyConfigured ? "已配置" : "未配置"}
+          </span>
+          <span className={status.workspaceConfigured ? "ready" : ""}>
+            Workspace ID {status.workspaceConfigured ? "已配置" : "未配置"}
+          </span>
         </div>
-        {saved ? <p className="save-confirmation">凭据已写入 macOS 钥匙串。</p> : null}
+        <p className="settings-hint">
+          Workspace ID 需要在控制台手动查看，本应用不会代为查询账号信息。
+        </p>
+
         <div className="settings-actions">
-          <button type="button" onClick={onClear} disabled={!ready}><Trash2 size={15} />清除凭据</button>
-          <button type="submit" className="primary" disabled={!ready}><Save size={15} />{ready ? "保存到 macOS 钥匙串" : "正在建立安全会话…"}</button>
+          <a
+            className="text-link"
+            href={helpLinks.console}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <ExternalLink size={14} /> 打开百炼控制台
+          </a>
+          {confirmClear ? (
+            <span className="confirm-inline">
+              <span>确认清除已保存凭据？</span>
+              <button
+                type="button"
+                disabled={busy !== ""}
+                onClick={() => void clear("all")}
+              >
+                确认清除
+              </button>
+              <button type="button" onClick={() => setConfirmClear(false)}>
+                取消
+              </button>
+            </span>
+          ) : (
+            <button
+              type="button"
+              disabled={!ready || busy !== "" || (!status.apiKeyConfigured && !status.workspaceConfigured)}
+              onClick={() => setConfirmClear(true)}
+            >
+              <Trash2 size={15} /> 清除凭据
+            </button>
+          )}
         </div>
-      </form>
+      </div>
+
+      <div className="settings-group">
+        <h2>本地环境检查</h2>
+        <p className="settings-note">
+          只检查依赖与配置是否就绪，不调用模型，也不会产生费用。
+        </p>
+        <button type="button" disabled={busy !== ""} onClick={() => void runDiagnostics()}>
+          {busy === "diagnostics" ? <Loader2 size={15} className="spin" /> : <SlidersHorizontal size={15} />}
+          运行本地检查
+        </button>
+        {diagnostics ? (
+          <ul className="diagnostics-list">
+            {Object.entries(diagnostics.tools).map(([name, tool]) => (
+              <li key={name}>
+                {tool.available ? "✓" : "✕"} {name}
+                {tool.available ? " 可用" : " 未找到，请安装后重试"}
+              </li>
+            ))}
+            <li>{diagnostics.storage.data_root_writable ? "✓" : "✕"} 数据目录可写</li>
+            <li>{diagnostics.credentials.api_key_configured ? "✓" : "✕"} API Key 已配置</li>
+            <li>{diagnostics.credentials.workspace_configured ? "✓" : "✕"} Workspace ID 已配置</li>
+            <li className="muted">未检查：{diagnostics.not_checked.join("、")}</li>
+          </ul>
+        ) : null}
+        <p className="settings-hint">
+          短音频实测会产生真实云端调用与费用，需在创作台完成一次已确认的生成任务；
+          本期设置页不提供隐藏的免费授权探测。
+        </p>
+      </div>
+
+      <div className="settings-group">
+        <h2>外观</h2>
+        <label className="settings-field">
+          <span>脚本字体</span>
+          <select
+            aria-label="脚本字体"
+            value={font}
+            onChange={(event) => setFont(event.target.value)}
+          >
+            {SCRIPT_FONTS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="settings-field">
+          <span>脚本字号</span>
+          <select
+            aria-label="脚本字号"
+            value={fontSize}
+            onChange={(event) => setFontSize(Number(event.target.value))}
+          >
+            {FONT_SIZES.map((size) => (
+              <option key={size} value={size}>
+                {size}px
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="settings-actions">
+          <button
+            type="button"
+            disabled={busy !== "" || !settings}
+            onClick={() => void saveAppearance()}
+          >
+            {busy === "appearance" ? <Loader2 size={15} className="spin" /> : null}
+            保存外观设置
+          </button>
+        </div>
+      </div>
+
+      <div className="settings-group">
+        <h2>高级</h2>
+        <label className="settings-field">
+          <span>并发任务数</span>
+          <select
+            aria-label="并发任务数"
+            value={workers}
+            onChange={(event) => setWorkers(Number(event.target.value))}
+          >
+            {[1, 2].map((count) => (
+              <option key={count} value={count}>
+                {count}
+              </option>
+            ))}
+          </select>
+        </label>
+        <p className="settings-hint">输出目录选择将在文件与存储设置中提供。</p>
+      </div>
     </section>
+  );
+}
+
+function Field(props: {
+  label: string;
+  value: string;
+  configured: boolean;
+  revealed: boolean;
+  busy: boolean;
+  ready: boolean;
+  helpHref: string;
+  helpText: string;
+  onChange: (value: string) => void;
+  onToggleReveal: () => void;
+  onSave: () => void;
+}) {
+  return (
+    <div className="settings-field-row">
+      <label className="settings-field">
+        <span>
+          {props.label}
+          {props.configured ? <em className="configured">已配置</em> : null}
+        </span>
+        <input
+          aria-label={props.label}
+          type={props.revealed ? "text" : "password"}
+          value={props.value}
+          autoComplete="off"
+          spellCheck={false}
+          placeholder={props.configured ? "留空表示不修改" : "输入后保存"}
+          onChange={(event) => props.onChange(event.target.value)}
+        />
+      </label>
+      <div className="field-tools">
+        <button
+          type="button"
+          aria-label={`${props.revealed ? "隐藏" : "显示"}${props.label.split("（")[0]}`}
+          onClick={props.onToggleReveal}
+        >
+          {props.revealed ? <EyeOff size={15} /> : <Eye size={15} />}
+        </button>
+        <a href={props.helpHref} target="_blank" rel="noopener noreferrer">
+          <ExternalLink size={13} /> {props.helpText}
+        </a>
+      </div>
+      <button
+        type="button"
+        className="primary"
+        disabled={!props.ready || props.busy || !props.value.trim()}
+        onClick={props.onSave}
+      >
+        {props.busy ? <Loader2 size={15} className="spin" /> : null}
+        保存{props.label.split("（")[0]}
+      </button>
+    </div>
   );
 }

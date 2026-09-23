@@ -59,11 +59,11 @@ JOB_UPDATABLE = {
 class RevisionConflict(RuntimeError):
     code = "REVISION_CONFLICT"
 
-    def __init__(self, project_id: str, current_revision: int) -> None:
+    def __init__(self, entity_id: str, current_revision: int) -> None:
         super().__init__(
-            f"项目 {project_id} 已被另一处修改，当前 revision 为 {current_revision}"
+            f"{entity_id} 已被另一处修改，当前 revision 为 {current_revision}"
         )
-        self.project_id = project_id
+        self.entity_id = entity_id
         self.current_revision = current_revision
 
 
@@ -491,6 +491,51 @@ class StudioStore:
         if not path.is_file():
             raise FileNotFoundError(asset_id)
         return {**asset, "path": path}
+
+    def save_settings(
+        self, expected_revision: int, changes: dict[str, Any]
+    ) -> dict[str, Any]:
+        columns = dict(changes)
+        if "default_params" in columns:
+            columns["default_params_json"] = json.dumps(
+                columns.pop("default_params"), ensure_ascii=False
+            )
+        assignments = ", ".join(f"{name} = ?" for name in columns)
+        connection = self._connect()
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            current = connection.execute(
+                "SELECT revision FROM settings WHERE singleton_id = 1"
+            ).fetchone()
+            if current is None:
+                raise KeyError("settings")
+            result = connection.execute(
+                f"UPDATE settings SET {assignments}, revision = revision + 1, "
+                "updated_at = ? WHERE singleton_id = 1 AND revision = ?",
+                (
+                    *columns.values(),
+                    now_iso(),
+                    expected_revision,
+                ),
+            )
+            if result.rowcount != 1:
+                raise RevisionConflict("settings", int(current["revision"]))
+            connection.execute("COMMIT")
+        finally:
+            connection.close()
+        return self.settings()
+
+    def directory_exists(self, directory_id: str) -> bool:
+        connection = self._connect()
+        try:
+            return (
+                connection.execute(
+                    "SELECT 1 FROM output_directories WHERE id = ?", (directory_id,)
+                ).fetchone()
+                is not None
+            )
+        finally:
+            connection.close()
 
     def settings(self) -> dict[str, Any]:
         connection = self._connect()

@@ -838,6 +838,52 @@ a { color: inherit; text-decoration: none; }
 .settings-actions .primary { color: white; border-color: var(--blue); background: var(--blue-bright); }
 .settings-actions button:disabled { opacity: 0.45; cursor: wait; }
 
+/* Field-by-field credential editing, local checks and the help page. */
+.settings-group { margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--line); }
+.settings-group h2 { margin: 0 0 12px; font-size: 15px; letter-spacing: -0.02em; }
+.settings-note, .settings-hint { margin: 0 0 14px; color: #aebed1; font-size: 11px; line-height: 1.65; }
+.settings-hint { color: var(--subtle); font-size: 10px; }
+.settings-field { display: grid; gap: 7px; margin-bottom: 14px; }
+.settings-field > span { display: flex; align-items: center; gap: 8px; color: #aebed1; font-size: 10px; }
+.settings-field input, .settings-field select { min-height: 42px; padding: 0 12px; color: var(--text); border: 1px solid var(--line); border-radius: 8px; outline: 0; background: #0a1626; }
+.settings-field input:focus, .settings-field select:focus { border-color: var(--blue); }
+.settings-field select { appearance: none; }
+.configured { padding: 2px 7px; color: var(--green); border: 1px solid #285348; border-radius: 5px; font-size: 9px; font-style: normal; }
+.settings-field-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: end; gap: 10px; margin-bottom: 16px; }
+.settings-field-row .settings-field { margin-bottom: 0; }
+.field-tools { display: flex; align-items: center; gap: 8px; }
+.field-tools button { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; color: #bdcad9; border: 1px solid var(--line); border-radius: 8px; background: #0e1d30; }
+.field-tools a, .text-link { display: inline-flex; align-items: center; gap: 5px; color: var(--blue); font-size: 10px; text-decoration: none; }
+.field-tools a:hover, .text-link:hover { text-decoration: underline; }
+.settings-actions { flex-wrap: wrap; justify-content: flex-start; }
+.settings-actions > button, .settings-group > button { min-height: 38px; display: inline-flex; align-items: center; gap: 7px; padding: 0 13px; color: #bdcad9; border: 1px solid var(--line); border-radius: 8px; background: #0e1d30; }
+.settings-actions > button:disabled, .settings-group > button:disabled { opacity: 0.45; cursor: wait; }
+.confirm-inline { display: inline-flex; align-items: center; gap: 8px; color: var(--amber); font-size: 10px; }
+.confirm-inline button { min-height: 32px; padding: 0 10px; color: #bdcad9; border: 1px solid var(--line); border-radius: 7px; background: #0e1d30; }
+.settings-feedback { display: flex; align-items: center; gap: 8px; margin: 16px 0 0; padding: 10px 12px; border-radius: 8px; font-size: 11px; }
+.settings-feedback.is-success { color: var(--green); border: 1px solid #285348; background: #0b2422; }
+.settings-feedback.is-error { color: #ff9d9d; border: 1px solid #5d2a30; background: #240d11; }
+.settings-feedback.is-info { color: #aebed1; border: 1px solid var(--line); background: #0e1d30; }
+.diagnostics-list { display: grid; gap: 6px; margin: 16px 0; padding: 0; list-style: none; color: #aebed1; font-size: 11px; }
+.diagnostics-list .muted { color: var(--subtle); font-size: 10px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 900ms linear infinite; }
+.help-page { min-height: calc(100vh - 58px); max-width: 920px; padding: 28px; }
+.help-page > header { padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+.help-page header span { color: var(--subtle); font-size: 9px; letter-spacing: 0.08em; }
+.help-page h1 { margin: 5px 0 0; font-size: 27px; letter-spacing: -0.04em; }
+.help-steps { display: grid; gap: 14px; margin: 22px 0 0; padding: 0; list-style: none; }
+.help-steps li { display: flex; gap: 12px; }
+.help-steps b { display: flex; flex: 0 0 auto; align-items: center; justify-content: center; width: 24px; height: 24px; color: white; border-radius: 50%; background: var(--blue-bright); font-size: 11px; }
+.help-steps strong { font-size: 12px; }
+.help-steps p { margin: 5px 0 0; color: #aebed1; font-size: 11px; line-height: 1.7; }
+.help-links { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none; }
+.nav-secondary { display: flex; gap: 14px; margin-bottom: 14px; }
+@media (max-width: 760px) {
+  .settings-field-row { grid-template-columns: minmax(0, 1fr); }
+  .field-tools { justify-content: flex-end; }
+}
+
 @media (max-width: 1120px) {
   .workbench-grid { grid-template-columns: 1fr; }
   .workbench-inspector { display: grid; grid-template-columns: 1fr 1fr; }

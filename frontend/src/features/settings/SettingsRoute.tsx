@@ -1,5 +1,5 @@
-import {useEffect, useState} from "react";
-import {clearCredentials, getSession, saveCredentials} from "../../api";
+import {useCallback, useEffect, useState} from "react";
+import {getSession} from "../../api";
 import type {CredentialStatus} from "../../types";
 import SettingsPage from "./SettingsPage";
 
@@ -9,23 +9,30 @@ export default function SettingsRoute() {
     workspaceConfigured: false
   });
   const [ready, setReady] = useState(false);
-  const refresh = () => getSession().then((session) => {
-    setStatus({
-      apiKeyConfigured: session.credentials.api_key_configured,
-      workspaceConfigured: session.credentials.workspace_configured
-    });
-    setReady(true);
-  });
-  useEffect(() => { void refresh(); }, []);
+
+  const refresh = useCallback(async () => {
+    try {
+      const session = await getSession();
+      setStatus({
+        apiKeyConfigured: session.credentials.api_key_configured,
+        workspaceConfigured: session.credentials.workspace_configured
+      });
+    } catch {
+      setStatus({apiKeyConfigured: false, workspaceConfigured: false});
+    } finally {
+      setReady(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
   return (
     <SettingsPage
       status={status}
       ready={ready}
-      onSave={async (apiKey, workspaceId) => {
-        await saveCredentials(apiKey, workspaceId);
-        await refresh();
-      }}
-      onClear={() => void clearCredentials().then(refresh)}
+      refreshStatus={refresh}
     />
   );
 }

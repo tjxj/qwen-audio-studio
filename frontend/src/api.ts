@@ -278,14 +278,93 @@ export async function saveCredentials(apiKey: string, workspaceId: string) {
   );
 }
 
-export async function clearCredentials() {
+/** Empty fields are omitted: a blank input means "do not change this field". */
+export async function patchCredentials(input: {
+  apiKey?: string;
+  workspaceId?: string;
+}): Promise<void> {
   await ensureSession();
-  return parse<void>(
+  const body: Record<string, string> = {};
+  if (input.apiKey?.trim()) body.api_key = input.apiKey.trim();
+  if (input.workspaceId?.trim()) body.workspace_id = input.workspaceId.trim();
+  if (!Object.keys(body).length) {
+    throw new ApiError("请先填写要更新的凭据。", {
+      code: "INVALID_PARAMS",
+      field: "api_key"
+    });
+  }
+  await parse<void>(
     await fetch("/api/settings/credentials", {
-      method: "DELETE",
-      headers: {"X-Qwen-Studio-CSRF": csrfToken}
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Qwen-Studio-CSRF": csrfToken
+      },
+      body: JSON.stringify(body)
     })
   );
+}
+
+export async function deleteCredentials(
+  scope: "all" | "api_key" | "workspace_id" = "all"
+): Promise<void> {
+  await ensureSession();
+  await parse<void>(
+    await fetch(
+      "/api/settings/credentials?scope=" + encodeURIComponent(scope),
+      {
+        method: "DELETE",
+        headers: {"X-Qwen-Studio-CSRF": csrfToken}
+      }
+    )
+  );
+}
+
+export async function clearCredentials() {
+  return deleteCredentials("all");
+}
+
+export interface SettingsPayload {
+  revision: number;
+  default_directory_id: string | null;
+  default_params: Record<string, unknown>;
+  script_font: string;
+  script_font_size: number;
+  max_workers: number;
+}
+
+export async function getSettings(): Promise<SettingsPayload> {
+  return parse<SettingsPayload>(await fetch("/api/settings"));
+}
+
+export async function patchSettings(
+  input: {expected_revision: number} & Record<string, unknown>
+): Promise<SettingsPayload> {
+  await ensureSession();
+  return parse<SettingsPayload>(
+    await fetch("/api/settings", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Qwen-Studio-CSRF": csrfToken
+      },
+      body: JSON.stringify(input)
+    })
+  );
+}
+
+export interface Diagnostics {
+  checked_at: string;
+  tools: Record<string, {available: boolean; path: string | null; version: string | null}>;
+  credentials: {api_key_configured: boolean; workspace_configured: boolean};
+  storage: {data_root_writable: boolean; database_ready: boolean};
+  model: {id: string; authorisation_checked: boolean};
+  not_checked: string[];
+  note: string;
+}
+
+export async function getDiagnostics(): Promise<Diagnostics> {
+  return parse<Diagnostics>(await fetch("/api/diagnostics"));
 }
 
 function mapParams(value: Record<string, unknown>) {

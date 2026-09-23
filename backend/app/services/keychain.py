@@ -23,6 +23,14 @@ class CredentialStatus(BaseModel):
     workspace_configured: bool
 
 
+class KeychainWriteError(RuntimeError):
+    code = "KEYCHAIN_UNAVAILABLE"
+
+
+class KeychainRollbackError(KeychainWriteError):
+    pass
+
+
 class CredentialStore:
     def status(self) -> CredentialStatus:
         raise NotImplementedError
@@ -36,10 +44,65 @@ class CredentialStore:
     def clear(self) -> None:
         raise NotImplementedError
 
+    def snapshot(self) -> Credentials:
+        """Partial read that never raises, so a merge can be computed safely."""
+        raise NotImplementedError
+
+    def replace(self, credentials: Credentials) -> None:
+        """Write both fields, deleting the ones left empty."""
+        raise NotImplementedError
+
+    def update(
+        self,
+        *,
+        api_key: Optional[str] = None,
+        workspace_id: Optional[str] = None,
+    ) -> Credentials:
+        """Merge single-field edits and undo them if the second write fails."""
+        previous = self.snapshot()
+        merged = Credentials(
+            api_key=(previous.api_key if api_key is None else api_key).strip(),
+            workspace_id=(
+                previous.workspace_id if workspace_id is None else workspace_id
+            ).strip(),
+        )
+        try:
+            self.replace(merged)
+        except Exception as exc:
+            try:
+                self.replace(previous)
+            except Exception as rollback_exc:  # pragma: no cover - keychain is wedged
+                raise KeychainRollbackError(
+                    "凭据写入失败，且旧值无法自动恢复；请解锁钥匙串后重新填写。"
+                ) from rollback_exc
+            raise KeychainWriteError(
+                "凭据未能完整保存，已恢复为原来的值。"
+            ) from exc
+        return merged
+
+    def clear_field(self, scope: str) -> None:
+        current = self.snapshot()
+        updates: dict[str, Optional[str]] = {}
+        if scope in {"all", "api_key"}:
+            updates["api_key"] = ""
+        if scope in {"all", "workspace_id"}:
+            updates["workspace_id"] = ""
+        if not updates:
+            raise ValueError("Unknown credential scope")
+        self.update(**updates)
+
 
 class FakeCredentialStore(CredentialStore):
-    def __init__(self, credentials: Optional[Credentials] = None):
+    """In-memory stand-in that can fail a single field write on demand."""
+
+    def __init__(
+        self,
+        credentials: Optional[Credentials] = None,
+        fail_on_write: Optional[set[int]] = None,
+    ):
         self.credentials = credentials
+        self.fail_on_write = set(fail_on_write or ())
+        self.write_count = 0
 
     def status(self) -> CredentialStatus:
         return CredentialStatus(
@@ -52,7 +115,27 @@ class FakeCredentialStore(CredentialStore):
         )
 
     def set(self, credentials: Credentials) -> None:
-        self.credentials = credentials
+        self.replace(credentials)
+
+    def snapshot(self) -> Credentials:
+        return self.credentials or Credentials(api_key="", workspace_id="")
+
+    def replace(self, credentials: Credentials) -> None:
+        self._apply("api_key", credentials.api_key)
+        self._apply("workspace_id", credentials.workspace_id)
+
+    def _apply(self, field: str, value: str) -> None:
+        self.write_count += 1
+        if self.write_count in self.fail_on_write:
+            raise RuntimeError("simulated keychain failure")
+        base = self.snapshot()
+        merged = Credentials(
+            api_key=value if field == "api_key" else base.api_key,
+            workspace_id=value if field == "workspace_id" else base.workspace_id,
+        )
+        self.credentials = (
+            merged if merged.api_key or merged.workspace_id else None
+        )
 
     def get(self) -> Credentials:
         if not self.credentials:
@@ -216,11 +299,24 @@ class SystemKeychainStore(CredentialStore):
         self._write(API_KEY_SERVICE, credentials.api_key)
         self._write(WORKSPACE_SERVICE, credentials.workspace_id)
 
-    def get(self) -> Credentials:
-        credentials = Credentials(
+    def snapshot(self) -> Credentials:
+        return Credentials(
             api_key=self._read(API_KEY_SERVICE),
             workspace_id=self._read(WORKSPACE_SERVICE),
         )
+
+    def replace(self, credentials: Credentials) -> None:
+        for service, value in (
+            (API_KEY_SERVICE, credentials.api_key),
+            (WORKSPACE_SERVICE, credentials.workspace_id),
+        ):
+            if value:
+                self._write(service, value)
+            else:
+                self.backend.delete(service, self.account)
+
+    def get(self) -> Credentials:
+        credentials = self.snapshot()
         if not credentials.api_key or not credentials.workspace_id:
             raise RuntimeError("Credentials are not configured")
         return credentials

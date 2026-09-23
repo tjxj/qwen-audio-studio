@@ -49,6 +49,11 @@ export function SideNavigation() {
         ))}
       </nav>
       <div className="nav-footer">
+        <div className="nav-secondary">
+          <NavLink to="/help" className="text-link">
+            帮助
+          </NavLink>
+        </div>
         <div className="privacy-note">
           <Mic2 size={18} />
           <span>参考音频仅在确认后上传</span>
