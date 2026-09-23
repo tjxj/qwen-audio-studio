@@ -25,6 +25,38 @@ describe("creation workbench", () => {
     expect(editor.value).toContain("窗外细雨");
   });
 
+  it("loads mode-specific guidance, templates and starter prompts", async () => {
+    const user = userEvent.setup();
+    render(<CreateWorkbench credentialsReady onSubmit={vi.fn()} onJobCreated={vi.fn()} />);
+    const editor = screen.getByLabelText("场景提示词");
+    const cases = [
+      {label: "广告", guide: "广告创作", template: "科技产品广告", prompt: "未来，此刻就在你手中"},
+      {label: "有声书", guide: "有声书创作", template: "天台夜话", prompt: "你说，我们是不是"},
+      {label: "广播剧", guide: "广播剧创作", template: "凌晨两点的便利店", prompt: "关东煮卖完了"},
+      {label: "游戏配音", guide: "游戏配音创作", template: "古槐树下的老村长", prompt: "后山那边"},
+      {label: "旁白", guide: "旁白创作", template: "AI 趋势解说", prompt: "一个人的创作能力"},
+      {label: "自定义", guide: "自定义创作", template: "自定义声音场景", prompt: "请在这里定义"}
+    ];
+
+    for (const item of cases) {
+      await user.click(screen.getByRole("button", {name: item.label}));
+      expect(screen.getByRole("heading", {name: item.guide})).toBeVisible();
+      expect(screen.getByRole("button", {name: new RegExp(item.template)})).toBeVisible();
+      expect((editor as HTMLTextAreaElement).value).toContain(item.prompt);
+    }
+  });
+
+  it("preserves a hand-edited prompt while changing the mode template rail", async () => {
+    const user = userEvent.setup();
+    render(<CreateWorkbench credentialsReady onSubmit={vi.fn()} onJobCreated={vi.fn()} />);
+    const editor = screen.getByLabelText("场景提示词");
+    await user.clear(editor);
+    await user.type(editor, "这是一段我自己写的提示词");
+    await user.click(screen.getByRole("button", {name: "广播剧"}));
+    expect(editor).toHaveValue("这是一段我自己写的提示词");
+    expect(screen.getByRole("button", {name: /凌晨两点的便利店/})).toBeVisible();
+  });
+
   it("disables generation until credentials are configured", () => {
     render(
       <CreateWorkbench

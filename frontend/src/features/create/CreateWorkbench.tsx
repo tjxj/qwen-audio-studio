@@ -14,7 +14,7 @@ import {GenerationInspector} from "./GenerationInspector";
 import {ModeSelector} from "./ModeSelector";
 import {PromptTagToolbar} from "./PromptTagToolbar";
 import {ReferenceAudioRack} from "./ReferenceAudioRack";
-import {inspirationTemplates} from "./templates";
+import {inspirationTemplates, modeProfiles} from "./templates";
 
 const initialPrompt = inspirationTemplates[0].prompt;
 
@@ -63,6 +63,11 @@ export default function CreateWorkbench({
   const [error, setError] = useState("");
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const remaining = 3000 - prompt.length;
+  const visibleTemplates = useMemo(
+    () => inspirationTemplates.filter((template) => template.mode === mode),
+    [mode]
+  );
+  const profile = modeProfiles[mode];
 
   const canGenerate = useMemo(
     () => credentialsReady && prompt.trim().length > 0 && remaining >= 0,
@@ -81,6 +86,19 @@ export default function CreateWorkbench({
       textarea?.focus();
       textarea?.setSelectionRange(update.selection.start, update.selection.end);
     });
+  };
+
+  const changeMode = (nextMode: CreationMode) => {
+    const promptComesFromTemplate = inspirationTemplates.some(
+      (template) => template.prompt === prompt
+    );
+    setMode(nextMode);
+    if (promptComesFromTemplate) {
+      const starter = inspirationTemplates.find(
+        (template) => template.mode === nextMode
+      );
+      if (starter) setPrompt(starter.prompt);
+    }
   };
 
   const submit = async () => {
@@ -135,7 +153,12 @@ export default function CreateWorkbench({
         <label>场景名称<input aria-label="场景名称" value={projectName} maxLength={120} onChange={(event) => setProjectName(event.target.value)} /></label>
         {initialProject ? <span>正在续作 · 新结果会归入同一项目</span> : <span>首次生成后自动创建本地项目</span>}
       </div>
-      <ModeSelector value={mode} onChange={setMode} />
+      <ModeSelector value={mode} onChange={changeMode} />
+      <section className="mode-context" aria-live="polite">
+        <div><span>当前工作流</span><h2>{profile.title}</h2></div>
+        <strong>{profile.description}</strong>
+        <p>{profile.detail}</p>
+      </section>
       <div className="workbench-grid">
         <section className="prompt-studio">
           <div className="editor-header">
@@ -161,10 +184,10 @@ export default function CreateWorkbench({
           <section className="inspiration-section">
             <div className="inspiration-heading">
               <div><Lightbulb size={17} /><strong>灵感模板</strong></div>
-              <span className="template-count">{inspirationTemplates.length} 个模板</span>
+              <span className="template-count">{visibleTemplates.length} 个模板</span>
             </div>
             <div className="template-rail">
-              {inspirationTemplates.map((template) => (
+              {visibleTemplates.map((template) => (
                 <button
                   type="button"
                   className="template-card"

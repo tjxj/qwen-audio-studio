@@ -5,7 +5,7 @@
 ## 自动化回归
 
 - Backend：26/26 通过。
-- Frontend：24/24 通过。
+- Frontend：26/26 通过。
 - macOS launcher：4/4 通过。
 - Vite production build：通过。
 - macOS 应用包：arm64 Mach-O 启动器、Info.plist、项目路径解析和 Finder 双击链路通过。
@@ -21,6 +21,7 @@
 - 播放、暂停、后退、音量、下载、真实版本切换、A/B 同步播放和最终版本标记通过。
 - 直接刷新子路由后的 CSRF 初始化、参考音频删除、同项目续作和 URL 指定版本优先级通过。
 - WAV/MP3 使用浏览器解码后的真实峰值波形；PCM 明确提供下载并禁用网页伪播放。
+- 7 个创作模式均联动专属说明、模板与起始 Prompt；手写 Prompt 在切换模式时保持不变。
 - 控制台在最终回归中无 error/warn。
 
 ## 真实 API 冒烟
