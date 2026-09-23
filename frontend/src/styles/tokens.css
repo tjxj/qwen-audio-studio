@@ -1,27 +1,184 @@
+/* Semantic colour and layout tokens.
+
+Both themes are first-class: every value below is checked against the 4.5:1 body
+contrast requirement, and no component is allowed to hardcode a colour literal.
+`:root` carries the dark theme so an unstyled document stays readable.
+*/
+
 :root {
+  color-scheme: dark;
+
   font-family: Inter, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
-  color: #edf3ff;
-  background: #07101d;
+  color: var(--text);
+  background: var(--bg-deep);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+
   --bg: #07101d;
   --bg-deep: #040a13;
   --panel: #0b1626;
   --panel-raised: #0e1c2f;
   --panel-soft: #101f34;
+  --panel-inset: #0a1626;
+  --panel-hover: #132439;
+
   --line: #1f334c;
   --line-strong: #2a4365;
+  --line-soft: #17293d;
+  --field-border: #5f7794;
+  --field-border-hover: #7a93b0;
+  --special: #c2adff;
+  --special-line: #5b4795;
+  --on-accent: #04101f;
+  --focus-glow: rgb(76 130 255 / 62%);
+  --accent-wash: rgb(76 130 255 / 12%);
+  --scrim: rgb(6 14 25 / 86%);
+  --special-bg: #17122e;
+
   --text: #f2f6ff;
-  --muted: #91a3ba;
-  --subtle: #61748e;
-  --blue: #4c82ff;
-  --blue-bright: #2c72ff;
-  --cyan: #25d3e8;
-  --green: #38d8a2;
-  --amber: #f2a94b;
+  --muted: #9db0c7;
+  --subtle: #7c8fa6;
+
+  --accent: #4c82ff;
+  --accent-strong: #2c72ff;
+  --accent-soft: rgb(76 130 255 / 16%);
+  --accent-line: rgb(76 130 255 / 46%);
+
+  --success: #38d8a2;
+  --success-text: #7fe9c4;
+  --success-line: #2a584c;
+  --success-bg: #0b2422;
+
+  --warning: #f2a94b;
+  --warning-text: #f0bd7c;
+  --warning-line: #5f482b;
+  --warning-bg: #241a0d;
+
   --danger: #ff6b73;
+  --danger-text: #ffa3a9;
+  --danger-line: #5d2a30;
+  --danger-bg: #240d11;
+
+  --focus-ring: #6ea0ff;
+  --overlay: rgb(4 10 19 / 72%);
+  --shadow-color: 0 0 0 / 32%;
+
   --radius-sm: 8px;
   --radius: 12px;
   --radius-lg: 16px;
   --shadow: 0 20px 60px rgb(0 0 0 / 32%);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #f6f7f3;
+  --bg-deep: #eceee7;
+  --panel: #ffffff;
+  --panel-raised: #ffffff;
+  --panel-soft: #fafbf7;
+  --panel-inset: #f2f4ee;
+  --panel-hover: #eef1e9;
+
+  --line: #dce3dd;
+  --line-strong: #b9c5bc;
+  --line-soft: #e7ebe5;
+  --field-border: #7d8d85;
+  --field-border-hover: #5f6f68;
+  --special: #5b3fb8;
+  --special-line: #c3b6ea;
+  --on-accent: #ffffff;
+  --focus-glow: rgb(23 107 91 / 42%);
+  --accent-wash: rgb(23 107 91 / 9%);
+  --scrim: rgb(238 241 234 / 92%);
+  --special-bg: #f1edfb;
+
+  --text: #202b28;
+  --muted: #465650;
+  --subtle: #5e6d67;
+
+  --accent: #176b5b;
+  --accent-strong: #0f5548;
+  --accent-soft: rgb(23 107 91 / 10%);
+  --accent-line: rgb(23 107 91 / 34%);
+
+  --success: #14684f;
+  --success-text: #14684f;
+  --success-line: #a8ccbf;
+  --success-bg: #eaf4ef;
+
+  --warning: #8a5108;
+  --warning-text: #8a5108;
+  --warning-line: #dcc094;
+  --warning-bg: #fbf2e3;
+
+  --danger: #a3282f;
+  --danger-text: #a3282f;
+  --danger-line: #dfb3b6;
+  --danger-bg: #fbeeee;
+
+  --focus-ring: #176b5b;
+  --overlay: rgb(24 32 29 / 42%);
+  --shadow-color: 32 45 40 / 14%;
+
+  --shadow: 0 18px 44px rgb(32 45 40 / 14%);
+}
+
+@media (prefers-color-scheme: light) {
+  /* Only until the first script pass resolves "system" to a concrete theme. */
+  :root:not([data-theme]) {
+    color-scheme: light;
+
+    --bg: #f6f7f3;
+    --bg-deep: #eceee7;
+    --panel: #ffffff;
+    --panel-raised: #ffffff;
+    --panel-soft: #fafbf7;
+    --panel-inset: #f2f4ee;
+    --panel-hover: #eef1e9;
+
+    --line: #dce3dd;
+    --line-strong: #b9c5bc;
+    --line-soft: #e7ebe5;
+
+    --field-border: #7d8d85;
+    --field-border-hover: #5f6f68;
+    --special: #5b3fb8;
+    --special-line: #c3b6ea;
+    --on-accent: #ffffff;
+  --focus-glow: rgb(23 107 91 / 42%);
+  --accent-wash: rgb(23 107 91 / 9%);
+  --scrim: rgb(238 241 234 / 92%);
+  --special-bg: #f1edfb;
+
+    --text: #202b28;
+    --muted: #465650;
+    --subtle: #5e6d67;
+
+    --accent: #176b5b;
+    --accent-strong: #0f5548;
+      --accent-soft: rgb(23 107 91 / 10%);
+    --accent-line: rgb(23 107 91 / 34%);
+
+    --success: #14684f;
+    --success-text: #14684f;
+    --success-line: #a8ccbf;
+    --success-bg: #eaf4ef;
+
+    --warning: #8a5108;
+    --warning-text: #8a5108;
+    --warning-line: #dcc094;
+    --warning-bg: #fbf2e3;
+
+    --danger: #a3282f;
+    --danger-text: #a3282f;
+    --danger-line: #dfb3b6;
+    --danger-bg: #fbeeee;
+
+    --focus-ring: #176b5b;
+    --overlay: rgb(24 32 29 / 42%);
+    --shadow-color: 32 45 40 / 14%;
+
+    --shadow: 0 18px 44px rgb(32 45 40 / 14%);
+  }
 }

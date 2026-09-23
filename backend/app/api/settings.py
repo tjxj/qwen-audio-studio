@@ -40,6 +40,7 @@ class SettingsPatch(BaseModel):
     default_params: Optional[dict] = None
     script_font: Optional[str] = None
     script_font_size: Optional[int] = None
+    theme: Optional[str] = None
     max_workers: Optional[int] = None
     default_directory_id: Optional[str] = None
 

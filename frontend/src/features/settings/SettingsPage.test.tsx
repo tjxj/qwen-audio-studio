@@ -2,7 +2,7 @@ import {render, screen, waitFor} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import SettingsPage from "./SettingsPage";
-import {ApiError, getSettings} from "../../api";
+import {ApiError, getSettings, patchSettings} from "../../api";
 
 vi.mock("../../api", async () => {
   const actual = await vi.importActual<typeof import("../../api")>("../../api");
@@ -18,7 +18,8 @@ vi.mock("../../api", async () => {
       script_font_size: 16,
       max_workers: 2,
       default_directory_id: null,
-      default_params: {}
+      default_params: {},
+      theme: "dark"
     }),
     getDiagnostics: vi.fn().mockResolvedValue({
       checked_at: "2026-09-23T00:00:00+00:00",
@@ -49,14 +50,16 @@ function renderPage(overrides: Record<string, unknown> = {}) {
 }
 
 beforeEach(() => {
+  vi.mocked(patchSettings).mockClear();
   vi.mocked(getSettings).mockResolvedValue({
     revision: 1,
     default_directory_id: null,
     default_params: {format: "wav", sample_rate: 48000, channels: 2},
     script_font: "serif",
     script_font_size: 16,
-    max_workers: 2
-  } as Awaited<ReturnType<typeof getSettings>>);
+    max_workers: 2,
+    theme: "system"
+  });
 });
 
 describe("settings page", () => {
@@ -146,6 +149,30 @@ describe("settings page", () => {
     await waitFor(() => expect(getDiagnostics).toHaveBeenCalledTimes(1));
     expect(screen.getByText(/ffmpeg 可用/)).toBeVisible();
     expect(screen.getByText(/未检查：/)).toBeVisible();
+  });
+
+  it("applies the theme immediately and persists the choice", async () => {
+    const {patchSettings} = await import("../../api");
+    const user = userEvent.setup();
+    document.documentElement.removeAttribute("data-theme");
+    renderPage();
+    await user.selectOptions(screen.getByLabelText("主题"), "dark");
+    expect(document.documentElement.dataset.theme).toBe("dark");
+    await waitFor(() => expect(patchSettings).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(patchSettings).mock.calls[0][0]).toMatchObject({
+      expected_revision: 1,
+      theme: "dark"
+    });
+  });
+
+  it("keeps the system preference resolved against the OS setting", async () => {
+    const {applyTheme, resolveTheme} = await import("../../theme");
+    expect(resolveTheme("system", true)).toBe("dark");
+    expect(resolveTheme("system", false)).toBe("light");
+    expect(resolveTheme("light", true)).toBe("light");
+    applyTheme("system");
+    expect(document.documentElement.dataset.themePreference).toBe("system");
+    expect(["light", "dark"]).toContain(document.documentElement.dataset.theme);
   });
 
   it("saves appearance preferences with the revision it loaded", async () => {

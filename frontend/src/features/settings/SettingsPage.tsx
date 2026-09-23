@@ -20,6 +20,7 @@ import {
   type Diagnostics
 } from "../../api";
 import type {CredentialStatus} from "../../types";
+import {applyTheme, normalizeTheme, type ThemePreference} from "../../theme";
 import {helpLinks, modelBoundary} from "../../config/helpLinks";
 
 type Feedback = {kind: "success" | "error" | "info"; text: string} | null;
@@ -31,6 +32,11 @@ const SCRIPT_FONTS = [
   {value: "sans", label: "系统无衬线"}
 ];
 const FONT_SIZES = [14, 16, 18];
+const THEME_OPTIONS: Array<{value: ThemePreference; label: string}> = [
+  {value: "system", label: "跟随系统"},
+  {value: "light", label: "浅色"},
+  {value: "dark", label: "深色"}
+];
 
 function errorText(reason: unknown, fallback: string) {
   if (reason instanceof ApiError) return reason.message;
@@ -54,6 +60,7 @@ export default function SettingsPage(props: {
   const [font, setFont] = useState("serif");
   const [fontSize, setFontSize] = useState(16);
   const [workers, setWorkers] = useState(2);
+  const [theme, setTheme] = useState<ThemePreference>("system");
   const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
 
   useEffect(() => {
@@ -63,6 +70,7 @@ export default function SettingsPage(props: {
         setFont(value.script_font);
         setFontSize(value.script_font_size);
         setWorkers(value.max_workers);
+        setTheme(normalizeTheme(value.theme));
       })
       .catch((reason) => setFeedback({kind: "error", text: errorText(reason, "读取设置失败")}));
   }, []);
@@ -92,6 +100,20 @@ export default function SettingsPage(props: {
     [apiKey, workspaceId, refreshStatus]
   );
 
+  const saveTheme = useCallback(
+    async (next: ThemePreference) => {
+      setTheme(next);
+      applyTheme(next);
+      if (!settings) return;
+      try {
+        setSettings(await patchSettings({expected_revision: settings.revision, theme: next}));
+      } catch (reason) {
+        setFeedback({kind: "error", text: errorText(reason, "主题设置保存失败")});
+      }
+    },
+    [settings]
+  );
+
   const saveAppearance = useCallback(async () => {
     if (!settings) return;
     setBusy("appearance");
@@ -101,7 +123,8 @@ export default function SettingsPage(props: {
         expected_revision: settings.revision,
         script_font: font,
         script_font_size: fontSize,
-        max_workers: workers
+        max_workers: workers,
+        theme
       });
       setSettings(next);
       setFeedback({kind: "success", text: "外观与并发设置已保存。"});
@@ -116,7 +139,7 @@ export default function SettingsPage(props: {
     } finally {
       setBusy("");
     }
-  }, [settings, font, fontSize, workers]);
+  }, [settings, font, fontSize, workers, theme]);
 
   const clear = useCallback(
     async (scope: "all" | "api_key" | "workspace_id") => {
@@ -274,6 +297,20 @@ export default function SettingsPage(props: {
 
       <div className="settings-group">
         <h2>外观</h2>
+        <label className="settings-field">
+          <span>主题</span>
+          <select
+            aria-label="主题"
+            value={theme}
+            onChange={(event) => void saveTheme(event.target.value as ThemePreference)}
+          >
+            {THEME_OPTIONS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="settings-field">
           <span>脚本字体</span>
           <select

@@ -15,6 +15,7 @@ from app.services.studio_store import StudioStore
 
 SCRIPT_FONTS = {"serif", "sans"}
 SCRIPT_FONT_SIZES = {14, 16, 18}
+THEMES = ["light", "dark", "system"]
 MIN_WORKERS = 1
 MAX_WORKERS = 2
 
@@ -35,6 +36,7 @@ class PreferenceService:
         settings["max_workers_allowed"] = [MIN_WORKERS, MAX_WORKERS]
         settings["script_font_options"] = sorted(SCRIPT_FONTS)
         settings["script_font_size_options"] = sorted(SCRIPT_FONT_SIZES)
+        settings["theme_options"] = list(THEMES)
         return settings
 
     def update(self, expected_revision: int, changes: dict[str, Any]) -> dict[str, Any]:
@@ -58,6 +60,11 @@ class PreferenceService:
             if size not in SCRIPT_FONT_SIZES:
                 raise PreferenceError("script_font_size", "字号只能是 14、16 或 18。")
             cleaned["script_font_size"] = int(size)
+        if "theme" in changes:
+            theme = changes["theme"]
+            if theme not in THEMES:
+                raise PreferenceError("theme", "主题只支持浅色、深色或跟随系统。")
+            cleaned["theme"] = theme
         if "max_workers" in changes:
             workers = int(changes["max_workers"])
             if workers < MIN_WORKERS or workers > MAX_WORKERS:

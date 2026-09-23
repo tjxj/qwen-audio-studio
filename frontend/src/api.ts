@@ -331,6 +331,8 @@ export interface SettingsPayload {
   script_font: string;
   script_font_size: number;
   max_workers: number;
+  theme: string;
+  theme_options?: string[];
 }
 
 export async function getSettings(): Promise<SettingsPayload> {

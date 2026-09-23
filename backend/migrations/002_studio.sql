@@ -26,6 +26,7 @@ CREATE TABLE settings (
     script_font          TEXT    NOT NULL DEFAULT 'serif',
     script_font_size     INTEGER NOT NULL DEFAULT 16,
     max_workers          INTEGER NOT NULL DEFAULT 2,
+    theme                TEXT    NOT NULL DEFAULT 'system',
     created_at           TEXT    NOT NULL,
     updated_at           TEXT    NOT NULL
 );

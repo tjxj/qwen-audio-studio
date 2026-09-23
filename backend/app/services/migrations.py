@@ -498,8 +498,8 @@ def _ensure_settings(connection: sqlite3.Connection) -> None:
     stamp = now_iso()
     connection.execute(
         "INSERT INTO settings (singleton_id, revision, default_params_json, "
-        "script_font, script_font_size, max_workers, created_at, updated_at) "
-        "VALUES (1, 1, ?, 'serif', 16, 2, ?, ?)",
+        "script_font, script_font_size, max_workers, theme, created_at, updated_at) "
+        "VALUES (1, 1, ?, 'serif', 16, 2, 'system', ?, ?)",
         (
             json.dumps(canonical_params(None), ensure_ascii=False),
             stamp,

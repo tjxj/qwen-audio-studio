@@ -542,7 +542,7 @@ class StudioStore:
         try:
             row = connection.execute(
                 "SELECT revision, default_directory_id, default_params_json, "
-                "script_font, script_font_size, max_workers FROM settings "
+                "script_font, script_font_size, max_workers, theme FROM settings "
                 "WHERE singleton_id = 1"
             ).fetchone()
         finally:
@@ -556,6 +556,7 @@ class StudioStore:
             "script_font": row["script_font"],
             "script_font_size": row["script_font_size"],
             "max_workers": row["max_workers"],
+            "theme": row["theme"],
         }
 
 
