@@ -129,12 +129,13 @@ export function useProjectDraft({
   }, []);
 
   useEffect(() => {
-    if (!loaded) return;
-    const copy = readRecovery(loaded.id);
-    if (copy && JSON.stringify(copy) !== JSON.stringify(fieldsOf(loaded))) {
-      setRecovered(copy);
-    }
-  }, [loaded]);
+    const key = loaded ? loaded.id : projectId;
+    if (!loaded && projectId) return;
+    const copy = key ? readRecovery(key) : readRecovery(null);
+    if (!copy) return;
+    if (loaded && JSON.stringify(copy) === JSON.stringify(fieldsOf(loaded))) return;
+    setRecovered(copy);
+  }, [loaded, projectId]);
 
   const settle = useCallback(
     (next: SaveState, text = "") => {
@@ -180,6 +181,7 @@ export function useProjectDraft({
           queuedRef.current = true;
           continue;
         }
+        clearRecovery(activeId);
         clearRecovery(idRef.current);
         ok = true;
         if (mountedRef.current) setConflict(null);

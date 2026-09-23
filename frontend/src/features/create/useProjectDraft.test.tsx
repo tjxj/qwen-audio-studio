@@ -312,6 +312,44 @@ describe("project draft autosave", () => {
     expect(calls.some((call) => call.method === "PATCH")).toBe(true);
   });
 
+  it("keeps a failed brand-new draft recoverable under the unsaved key", async () => {
+    stub(() => {
+      throw new TypeError("offline");
+    });
+    const first = render(<Harness projectId={null} />);
+    await act(async () => {
+      controller.change({prompt: "没网时写的稿子"});
+      await controller.saveNow();
+    });
+    expect(screen.getByTestId("state")).toHaveTextContent("failed");
+    expect(
+      JSON.parse(window.localStorage.getItem(recoveryKey(null)) || "{}").prompt
+    ).toBe("没网时写的稿子");
+    first.unmount();
+
+    stub(() => draftResponse({id: "proj_other", revision: 1}));
+    render(<Harness projectId={null} />);
+    await waitFor(() => expect(controller.recovered).not.toBeNull());
+    expect(controller.recovered?.prompt).toBe("没网时写的稿子");
+  });
+
+  it("clears the unsaved-draft copy once the brand-new project is created", async () => {
+    vi.useFakeTimers();
+    try {
+      stub(() => draftResponse({id: "proj_created", revision: 1}));
+      render(<Harness projectId={null} />);
+      act(() => controller.change({prompt: "第一行"}));
+      await act(async () => {
+        vi.advanceTimersByTime(AUTOSAVE_DELAY_MS);
+      });
+      await flush(20);
+      expect(controller.projectId).toBe("proj_created");
+      expect(window.localStorage.getItem(recoveryKey(null))).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("offers the older local copy for recovery after a reload", async () => {
     window.localStorage.setItem(
       recoveryKey("proj_1"),
