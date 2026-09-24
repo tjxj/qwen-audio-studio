@@ -18,6 +18,7 @@ import {
   patchCredentials,
   patchSettings,
   type Diagnostics,
+  type SettingsPayload,
 } from "../../api";
 import type { CredentialStatus } from "../../types";
 import { applyTheme, normalizeTheme, type ThemePreference } from "../../theme";
@@ -72,6 +73,7 @@ export default function SettingsPage(props: {
   const [theme, setTheme] = useState<ThemePreference>("system");
   const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
   const [tab, setTab] = useState("connection");
+  useEffect(()=>{const sync=(event:Event)=>{const settings=(event as CustomEvent<SettingsPayload>).detail;if(settings?.revision){setSettings(settings);setTheme(normalizeTheme(settings.theme))}};window.addEventListener('qwen-theme-updated',sync);return()=>window.removeEventListener('qwen-theme-updated',sync)},[]);
 
   useEffect(() => {
     getSettings()

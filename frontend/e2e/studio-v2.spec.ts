@@ -97,7 +97,7 @@ test("草稿自动保存、刷新恢复，七种模式切换保留手写内容",
   expect(saved.prompt).toBe(text);
   expect(saved.mode).toBe("podcast");
   expect(saved.revision).toBeGreaterThan(1);
-  await expect(page.getByRole("button", { name: "新建空白草稿" })).toHaveCount(
+  await expect(page.getByRole("button", { name: "空白草稿" })).toHaveCount(
     0,
   );
 });
@@ -150,7 +150,7 @@ test("设置分组、默认参数保存，并应用于新草稿", async ({ page,
   });
   await page.getByRole("link", { name: "创作台", exact: true }).click();
   await page.getByRole("button", { name: "更多草稿操作" }).click();
-  await page.getByRole("button", { name: "新建空白草稿" }).click();
+  await page.getByRole("button", { name: "空白草稿" }).click();
   await expect(page.getByLabel("场景提示词")).toHaveValue("");
   await expect(page.getByLabel("输出格式")).toHaveValue("mp3");
   await expect(page.getByLabel("采样率")).toHaveValue("24000");

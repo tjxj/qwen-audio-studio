@@ -214,7 +214,8 @@ describe("creation workbench", () => {
     ];
     for (const item of cases) {
       await user.click(screen.getByRole("button", { name: item.label }));
-      expect(screen.getByRole("heading", { name: item.guide })).toBeVisible();
+      expect(screen.queryByRole("heading", { name: item.guide })).not.toBeInTheDocument();
+      expect(screen.getByRole('button',{name:item.label})).toHaveAttribute('aria-pressed','true');
       expect(screen.getByRole("button", { name: item.template })).toBeVisible();
       expect((editor as HTMLTextAreaElement).value).toContain(item.prompt);
     }
@@ -362,7 +363,7 @@ describe("creation workbench", () => {
       screen.queryByRole("button", { name: /新建/ }),
     ).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "更多草稿操作" }));
-    await user.click(screen.getByRole("button", { name: /新建空白草稿/ }));
+    await user.click(screen.getByRole("button", { name: /空白草稿/ }));
     expect(onNewProject).toHaveBeenCalledTimes(1);
   });
 });

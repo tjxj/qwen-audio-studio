@@ -23,7 +23,7 @@ import { insertTag, type PromptTag } from "./editor";
 import { GenerationInspector } from "./GenerationInspector";
 import { ModeSelector } from "./ModeSelector";
 import { PromptTagToolbar } from "./PromptTagToolbar";
-import { inspirationTemplates, modeProfiles } from "./templates";
+import { inspirationTemplates } from "./templates";
 import type { ProjectDraftController } from "./useProjectDraft";
 import { VoiceDrawer, type VoiceReference } from "../voices/VoiceDrawer";
 import { TemplatePicker } from "../templates/TemplatePicker";
@@ -132,7 +132,6 @@ export default function CreateWorkbench({
   const visibleTemplates = inspirationTemplates
     .filter((t) => t.mode === form.mode)
     .slice(0, 3);
-  const profile = modeProfiles[form.mode];
   const applyTag = (tag: PromptTag) => {
     const el = editorRef.current;
     const next = insertTag(
@@ -286,7 +285,7 @@ export default function CreateWorkbench({
       </div>
       {tab === "voice" ? (
         <div className="inspector-section">
-          <label>
+          {form.referenceBindings.length===0?<label>
             描述你想要的声音
             <textarea
               aria-label="声音描述"
@@ -295,8 +294,8 @@ export default function CreateWorkbench({
               placeholder="例如：温和沉静的讲述者，语速舒缓，像面对面聊天。"
               onChange={(e) => setVoiceText(e.target.value)}
             />
-          </label>
-          {voiceText.trim() ? (
+          </label>:null}
+          {voiceText.trim() && form.referenceBindings.length===0 ? (
             <button
               onClick={() => {
                 edited.current = true;
@@ -494,7 +493,7 @@ export default function CreateWorkbench({
         </label>
         <span className="save-status" data-testid="save-state">
           <Check size={14} />
-          {SAVE_STATE_LABELS[draft?.state || "clean"]}
+          {draft && !draft.projectId && draft.state==='clean'?'未保存':SAVE_STATE_LABELS[draft?.state || "clean"]}
         </span>
         <div className="draft-menu">
           <button
@@ -515,7 +514,7 @@ export default function CreateWorkbench({
                   }}
                 >
                   <Plus size={16} />
-                  新建空白草稿
+                  空白草稿
                 </button>
               ) : null}
               <button
@@ -549,12 +548,6 @@ export default function CreateWorkbench({
         </div>
       ) : null}
       <ModeSelector value={form.mode} onChange={changeMode} />
-      <section className="mode-context" aria-live="polite">
-        <h2>{profile.title}</h2>
-        <p>
-          {profile.description}，{profile.detail.split("，")[0]}。
-        </p>
-      </section>
       <div className="workspace-frame">
         <div className="workbench-grid">
           <section className="prompt-studio">

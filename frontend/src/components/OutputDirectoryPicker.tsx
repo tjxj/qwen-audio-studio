@@ -16,6 +16,7 @@ export function OutputDirectoryPicker({
 }) {
   const [directory, setDirectory] = useState<Directory | null>(null),
     [busy, setBusy] = useState(false),
+    [revealing,setRevealing] = useState(false),
     [error, setError] = useState("");
   useEffect(() => {
     let active = true;
@@ -52,7 +53,7 @@ export function OutputDirectoryPicker({
   };
   return (
     <div className="output-directory-picker">
-      <FolderOpen size={18} />
+      <button className="directory-reveal" aria-label="在Finder中打开输出文件夹" title="在 Finder 中打开" disabled={!directory?.id||busy||revealing} onClick={async()=>{if(!directory)return;setRevealing(true);setError('');try{await request('/api/directories/'+encodeURIComponent(directory.id)+'/reveal','POST',{})}catch(e){setError(e instanceof Error?e.message:'无法打开文件夹')}finally{setRevealing(false)}}}><FolderOpen size={18}/></button>
       <span className="directory-name">
         {directory?.display_name || "默认文件夹"}
       </span>

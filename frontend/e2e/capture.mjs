@@ -15,7 +15,7 @@ for(const theme of ['light','dark']){
  for(const [width,height] of (theme==='light'?[[1440,900],[1280,720],[768,1024],[390,844]]:[[1440,900]])){
   await page.setViewportSize({width,height});
   for(const [name,url,heading] of [['create','/?project='+draft.id,'播客创作'],['library','/library?status=success','作品库'],['templates','/templates','从一个灵感开始'],['settings','/settings','设置']]){
-   await page.goto(base+url);await page.getByRole('heading',{name:heading,exact:true}).waitFor();await page.evaluate(()=>document.fonts.ready);
+   await page.goto(base+url);if(name==='create')await page.getByLabel('场景提示词').waitFor();else await page.getByRole('heading',{name:heading,exact:true}).waitFor();await page.evaluate(()=>document.fonts.ready);
    if(name==='library')await page.locator('.library-table tbody tr').first().waitFor();
    if(name==='templates')await page.locator('.tpl-card').first().waitFor();
    const layout=await page.evaluate(()=>({width:innerWidth,height:innerHeight,scrollWidth:document.documentElement.scrollWidth,scrollHeight:document.documentElement.scrollHeight,serif:document.fonts.check('16px "Studio Serif"'),overflows:[...document.querySelectorAll('button,input,select,textarea')].filter(e=>e.getBoundingClientRect().width&&getComputedStyle(e).visibility!=='hidden').filter(e=>{const r=e.getBoundingClientRect();return r.right>innerWidth+1||r.left< -1}).map(e=>e.getAttribute('aria-label')||e.textContent)}));

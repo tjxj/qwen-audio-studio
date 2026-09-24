@@ -3,6 +3,13 @@ import { describe, it, expect, vi } from "vitest";
 import CreateWorkbench from "./CreateWorkbench";
 
 describe("compact creation workflow", () => {
+  it('removes the redundant mode description and project-creation wording', () => {
+    render(<CreateWorkbench credentialsReady onSubmit={vi.fn()} onJobCreated={vi.fn()}/>);
+    expect(screen.queryByText('当前工作流')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading',{name:'播客创作'})).not.toBeInTheDocument();
+    expect(screen.queryByText('自然对谈与稳定声场',{exact:false})).not.toBeInTheDocument();
+    expect(screen.queryByText('新建项目')).not.toBeInTheDocument();
+  });
   it("keeps the new draft action behind a quiet menu and preserves a hand edit across modes", () => {
     render(
       <CreateWorkbench

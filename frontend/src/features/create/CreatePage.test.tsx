@@ -93,7 +93,7 @@ test("菜单创建空白草稿也带上当前保存的默认参数和目录", as
   const user = userEvent.setup();
   mount();
   await user.click(await screen.findByRole("button", { name: "更多草稿操作" }));
-  await user.click(screen.getByRole("button", { name: "新建空白草稿" }));
+  await user.click(screen.getByRole("button", { name: "空白草稿" }));
   await waitFor(() => expect(createProject).toHaveBeenCalledTimes(2));
   expect(vi.mocked(createProject).mock.calls[1][0]).toMatchObject({
     prompt: "",

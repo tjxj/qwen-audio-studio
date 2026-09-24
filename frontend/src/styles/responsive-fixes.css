@@ -1,4 +1,13 @@
 /* Compact, aligned controls remain visible on a small laptop and a phone. */
+.header-actions { display:flex; align-items:center; gap:16px; }
+.theme-control { position:relative; }
+.theme-toggle { min-height:34px; height:34px; padding:5px 10px; font-size:12px; background:transparent; }
+.theme-notice { position:absolute; right:0; top:42px; z-index:40; width:260px; padding:10px; display:flex; align-items:center; gap:8px; border:1px solid var(--danger-line); border-radius:8px; background:var(--panel); color:var(--danger-text); box-shadow:var(--shadow); font-size:12px; }
+.output-directory-picker .directory-reveal { min-width:30px; min-height:34px; padding:5px; }
+.studio-modal .inspector-fields .range-field { grid-column:auto; }
+.studio-modal .mp3-quality { grid-template-columns:1fr 1fr; }
+.studio-modal .mp3-quality .subsection-label { grid-column:1/-1; }
+@media(max-width:500px){ .header-actions{gap:8px}.theme-toggle{padding:4px 7px;font-size:11px;min-height:30px;height:30px}.connection-status{font-size:10px} }
 .brand-lockup strong,.brand-lockup span { font-size: 17px; white-space: nowrap; line-height: 1.35; }
 @media (min-width:801px) and (max-width:1100px) { .brand-lockup strong,.brand-lockup span { font-size:14px; } }
 @media (min-width: 801px) and (max-height: 800px) {

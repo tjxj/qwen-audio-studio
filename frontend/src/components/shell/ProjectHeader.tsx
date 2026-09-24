@@ -1,5 +1,6 @@
 import { Circle } from "lucide-react";
 import { useLocation } from "react-router-dom";
+import {ThemeToggle} from './ThemeToggle';
 
 export function ProjectHeader({
   connection,
@@ -32,6 +33,7 @@ export function ProjectHeader({
           <Circle size={8} fill="currentColor" />
           本地服务{label}
         </span>
+        <ThemeToggle/>
       </div>
     </header>
   );
