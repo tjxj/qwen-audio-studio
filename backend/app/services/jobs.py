@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from concurrent.futures import Future, ThreadPoolExecutor
-from threading import RLock
+from threading import RLock, Condition
 from typing import Callable
 
 from app.models import JobCreate, JobRecord, ReferenceConsent
 from app.services.storage import JobStore, sanitize_error
 from app.services.studio_store import StudioStore
+from app.errors import DomainError
+from app.services.migrations import now_iso
 
 
 class SqliteJobStore:
@@ -49,6 +51,20 @@ class SqliteJobStore:
 
     def update(self, job_id: str, changes: dict) -> JobRecord:
         return self._record(self.store.update_job(job_id, changes))
+
+    def claim(self, job_id: str) -> JobRecord | None:
+        with self.store._connect() as db:
+            updated=db.execute("UPDATE jobs SET status='running',stage='preparing',error_json=NULL,updated_at=? WHERE id=? AND status='queued'",(now_iso(),job_id))
+            if updated.rowcount!=1:
+                return None
+        return self.get(job_id)
+
+    def cancel_queued(self,job_id):
+        with self.store._connect() as db:
+            updated=db.execute("UPDATE jobs SET status='cancelled',stage=NULL,updated_at=? WHERE id=? AND status='queued'",(now_iso(),job_id))
+            if updated.rowcount!=1:
+                raise DomainError('JOB_ALREADY_STARTED','任务已开始或已结束，无法取消云端请求。')
+        return self.get(job_id)
 
     def list(self) -> list[JobRecord]:
         return [self._record(row) for row in self.store.list_jobs()]
@@ -95,26 +111,56 @@ class JobManager:
         store: "JobStore | SqliteJobStore",
         worker: Callable[[JobRecord], dict],
         max_workers: int = 2,
+        on_finished=None,
     ):
         self.store = store
         self.worker = worker
+        self.on_finished=on_finished or (lambda job_id:None)
+        self.limit=max_workers
+        self.active=0
+        self.capacity=Condition()
         self.executor = ThreadPoolExecutor(
-            max_workers=max_workers, thread_name_prefix="qwen-audio-job"
+            max_workers=2, thread_name_prefix="qwen-audio-job"
         )
         self.futures: dict[str, Future] = {}
         self.lock = RLock()
         self.store.recover_interrupted()
+        if isinstance(self.store,SqliteJobStore):
+            for row in self.store.store.list_jobs():
+                if row['status']=='interrupted':self.on_finished(row['id'])
+
+    def set_limit(self,value):
+        if value not in {1,2}:raise ValueError('并发数只能为 1 或 2')
+        with self.capacity:
+            self.limit=value
+            self.capacity.notify_all()
 
     def submit(self, payload: JobCreate) -> JobRecord:
         record = self.store.create(payload)
-        with self.lock:
-            self.futures[record.id] = self.executor.submit(
-                self._run, record.id
-            )
+        self.enqueue(record.id)
         return record
 
+    def enqueue(self,job_id):
+        with self.lock:
+            self.futures[job_id] = self.executor.submit(
+                self._run, job_id
+            )
+
     def _run(self, job_id: str) -> None:
-        record = self.store.update(job_id, {"status": "running", "error": None})
+        with self.capacity:
+            self.capacity.wait_for(lambda:self.active<self.limit)
+            self.active+=1
+        try:
+            self._execute(job_id)
+        finally:
+            with self.capacity:
+                self.active-=1
+                self.capacity.notify_all()
+
+    def _execute(self, job_id: str) -> None:
+        record = self.store.claim(job_id) if hasattr(self.store,'claim') else self.store.update(job_id, {"status": "running", "error": None})
+        if record is None:
+            return
         try:
             result = self.worker(record)
             self.store.update(
@@ -124,6 +170,7 @@ class JobManager:
                     "elapsed_seconds": result.get("elapsed_seconds"),
                     "output_asset_id": result.get("output_asset_id"),
                     "report": result.get("report"),
+                    **({'stage':None} if isinstance(self.store,SqliteJobStore) else {}),
                 },
             )
         except Exception as exc:
@@ -131,11 +178,18 @@ class JobManager:
                 job_id,
                 {
                     "status": "failed",
-                    "error": sanitize_error(str(exc)),
+                    "error": ({'code':exc.code,'message':exc.message,'retryable':exc.retryable} if isinstance(exc,DomainError) and isinstance(self.store,SqliteJobStore) else sanitize_error(str(exc))),
+                    **({'stage':None} if isinstance(self.store,SqliteJobStore) else {}),
                 },
             )
+        finally:
+            self.on_finished(job_id)
 
     def cancel(self, job_id: str) -> JobRecord:
+        if isinstance(self.store,SqliteJobStore):
+            record=self.store.cancel_queued(job_id)
+            self.on_finished(job_id)
+            return record
         future = self.futures.get(job_id)
         if future and future.cancel():
             return self.store.update(job_id, {"status": "cancelled"})

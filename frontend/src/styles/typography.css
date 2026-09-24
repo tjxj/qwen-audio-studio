@@ -1,0 +1,28 @@
+@font-face {
+  font-family: "Studio Serif";
+  src:
+    local("Source Han Serif SC VF"), local("思源宋体 VF"),
+    local("Source Han Serif SC"), local("SourceHanSerifSC-VF"),
+    url('/fonts/studio-han-serif.woff2') format('woff2');
+  font-weight: 250 900;
+  font-display: swap;
+}
+:root {
+  --font-ui:
+    -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei",
+    sans-serif;
+  --font-serif: "Studio Serif", "Songti SC", "STSong", serif;
+  --script-size: 16px;
+}
+h1,
+h2,
+.serif {
+  font-family: var(--font-serif);
+  font-weight: 600;
+}
+button,
+input,
+textarea,
+select {
+  font-family: var(--font-ui);
+}

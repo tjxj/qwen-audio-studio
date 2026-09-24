@@ -11,6 +11,7 @@ import requests
 
 from app.models import JobRecord
 from app.services.keychain import Credentials
+from app.errors import DomainError
 
 
 MODE_MAP = {
@@ -80,9 +81,13 @@ class QwenAdapter:
         output_dir: Path,
         credentials: Credentials,
         reference_paths: list[Path],
+        *,
+        compiled_prompt: str | None = None,
+        stage_callback=None,
     ) -> dict[str, Any]:
         started = time.monotonic()
-        prompt = self.compile_prompt(
+        stage=stage_callback or (lambda value:None)
+        prompt = compiled_prompt or self.compile_prompt(
             job.mode, job.prompt, len(reference_paths)
         )
         references = [
@@ -105,18 +110,25 @@ class QwenAdapter:
         )
         endpoint = self.module.build_endpoint(credentials.workspace_id)
         session = requests.Session()
-        response = self.module.post_generation(
-            session,
-            endpoint,
-            credentials.api_key,
-            payload,
-            redact_secrets=[credentials.workspace_id],
-        )
+        stage('requesting')
+        try:
+            response = self.module.post_generation(
+                session, endpoint, credentials.api_key, payload, max_attempts=1,
+                redact_secrets=[credentials.workspace_id],
+            )
+        except Exception as exc:
+            message=str(exc)
+            if 'HTTP 401' in message:
+                raise DomainError('PROVIDER_AUTH','API Key 未通过验证，请检查连接设置。',status=401) from exc
+            if 'HTTP 403' in message:
+                raise DomainError('PROVIDER_PERMISSION','当前业务空间未获得模型权限，请检查百炼配置。',status=403) from exc
+            raise DomainError('PROVIDER_OUTCOME_UNKNOWN','云端返回结果不确定，可能已产生费用。请确认后再手动重试。',status=502) from exc
         output_dir.mkdir(parents=True, exist_ok=True)
         audio_path = output_dir / f"{job.id}.{params.format}"
         metadata_holder: dict[str, Any] = {}
 
         def validator(path: Path):
+            stage('validating')
             metadata_holder.update(
                 self.module.validate_generated_audio(
                     path,
@@ -126,6 +138,7 @@ class QwenAdapter:
                 )
             )
 
+        stage('downloading')
         self.module.download_audio(
             session,
             response["output"]["audio"]["url"],

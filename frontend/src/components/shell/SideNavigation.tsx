@@ -1,19 +1,16 @@
 import {
   AudioLines,
-  Clock3,
   Folder,
-  Mic2,
+  Lightbulb,
+  CircleHelp,
   Settings,
-  SlidersHorizontal
 } from "lucide-react";
-import {NavLink} from "react-router-dom";
+import { NavLink } from "react-router-dom";
 
 const navigation = [
-  {to: "/", label: "创作台", icon: AudioLines, end: true},
-  {to: "/projects", label: "项目", icon: Folder},
-  {to: "/references", label: "音色参考", icon: Mic2},
-  {to: "/history", label: "生成历史", icon: Clock3},
-  {to: "/settings", label: "设置", icon: Settings}
+  { to: "/", label: "创作台", icon: AudioLines, end: true },
+  { to: "/library", label: "作品库", icon: Folder },
+  { to: "/templates", label: "灵感模板", icon: Lightbulb },
 ];
 
 export function SideNavigation() {
@@ -21,24 +18,24 @@ export function SideNavigation() {
     <aside className="side-navigation">
       <div className="brand-lockup">
         <div className="brand-mark" aria-hidden="true">
-          <SlidersHorizontal size={22} />
+          <AudioLines size={28} strokeWidth={1.8} />
         </div>
         <div>
-          <strong>Qwen Audio Studio</strong>
-          <span>Acoustic Darkroom</span>
+          <strong>Qwen Audio</strong>
+          <span>Studio</span>
         </div>
       </div>
       <nav aria-label="主导航">
-        {navigation.map(({to, label, icon: Icon, end}) => (
+        {navigation.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
             end={end}
-            className={({isActive}) =>
+            className={({ isActive }) =>
               "nav-item" + (isActive ? " is-active" : "")
             }
           >
-            {({isActive}) => (
+            {({ isActive }) => (
               <>
                 <Icon size={19} strokeWidth={1.7} />
                 <span>{label}</span>
@@ -49,19 +46,23 @@ export function SideNavigation() {
         ))}
       </nav>
       <div className="nav-footer">
-        <div className="nav-secondary">
-          <NavLink to="/help" className="text-link">
-            帮助
-          </NavLink>
-        </div>
-        <div className="privacy-note">
-          <Mic2 size={18} />
-          <span>参考音频仅在确认后上传</span>
-        </div>
-        <div className="local-storage">
-          <span>本地工作台</span>
-          <div><b /> 数据留在此设备</div>
-        </div>
+        <NavLink
+          to="/settings"
+          className={({ isActive }) =>
+            "nav-item" + (isActive ? " is-active" : "")
+          }
+        >
+          <Settings size={19} /> <span>设置</span>
+        </NavLink>
+        <NavLink
+          to="/help"
+          className={({ isActive }) =>
+            "nav-item" + (isActive ? " is-active" : "")
+          }
+        >
+          <CircleHelp size={19} /> <span>帮助</span>
+        </NavLink>
+        <p className="nav-caption">让灵感，被听见。</p>
       </div>
     </aside>
   );

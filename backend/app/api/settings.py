@@ -54,7 +54,10 @@ def read_settings(request: Request):
 def patch_settings(payload: SettingsPatch, request: Request):
     changes = payload.model_dump(exclude_unset=True, exclude={"expected_revision"})
     try:
-        return request.app.state.preferences.update(payload.expected_revision, changes)
+        result=request.app.state.preferences.update(payload.expected_revision, changes)
+        if 'max_workers' in changes:
+            request.app.state.job_manager.set_limit(result['max_workers'])
+        return result
     except PreferenceError as exc:
         raise DomainError(
             "INVALID_PARAMS", exc.message, status=422, field=exc.field

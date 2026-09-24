@@ -1,0 +1,1302 @@
+[
+  {
+    "id": "rain-podcast",
+    "source": "builtin",
+    "version": 2,
+    "name": "雨夜陪伴",
+    "mode": "podcast",
+    "description": "把忙碌的一天，轻轻放在雨声里。",
+    "tags": [
+      "雨夜陪伴",
+      "双人"
+    ],
+    "role_count": 2,
+    "suggested_duration_seconds": 45,
+    "prompt_pattern": "【角色：主播（成年男性，低声温和，像与朋友说话）】\n【角色：搭档（成年女性，松弛自然，接话有停顿）】\n【音效：窗外细雨轻落，室内保持安静】\n【对白：主播】这里是《{{show}}》。如果今天有件事没有做好，先把它放在门外吧。\n【对白：搭档】我刚刚泡了一杯热茶。等它慢慢变凉的时候，我们也可以慢一点。\n【对白：主播】嗯。今晚不赶路，就听这一阵雨。\n【音乐：稀疏钢琴轻轻进入，低于人声，结尾自然淡出】",
+    "variables": [
+      {
+        "key": "show",
+        "label": "节目名称",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "夜航小记"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "tech-podcast",
+    "source": "builtin",
+    "version": 2,
+    "name": "双人科技访谈",
+    "mode": "podcast",
+    "description": "从一个具体问题展开轻巧、有来回的访谈。",
+    "tags": [
+      "双人科技访谈",
+      "双人"
+    ],
+    "role_count": 2,
+    "suggested_duration_seconds": 50,
+    "prompt_pattern": "【角色：主持人（青年女性，敏锐好奇，语速适中）】\n【角色：嘉宾（成年男性，理性亲切，避免播报腔）】\n【音效：安静的小型录音室，无背景音乐】\n【对白：主持人】最近大家都在讨论{{topic}}。你最先观察的是什么？\n【对白：嘉宾】我先看它能否解决一个真实的小麻烦，再看参数表。\n【对白：主持人】比如让一次陌生的交流变得容易？\n【对白：嘉宾】对。技术的价值，常常藏在这些很具体的瞬间里。",
+    "variables": [
+      {
+        "key": "topic",
+        "label": "访谈话题",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "随身翻译耳机"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "knowledge-podcast",
+    "source": "builtin",
+    "version": 2,
+    "name": "知识问答",
+    "mode": "podcast",
+    "description": "用生活中的小疑问打开知识话题。",
+    "tags": [
+      "知识问答",
+      "双人"
+    ],
+    "role_count": 2,
+    "suggested_duration_seconds": 40,
+    "prompt_pattern": "【角色：提问者（青年男性，自然好奇）】\n【角色：讲述者（成年女性，清楚耐心，不夸张）】\n【对白：提问者】今天的小问题是，{{question}}？\n【对白：讲述者】可以这样理解：{{answer}}。\n【对白：提问者】原来熟悉的气味，也有这样的来历。\n【对白：讲述者】下次出门，不妨停一秒，仔细闻闻身边的世界。\n【音效：翻动便笺纸的轻响，结尾留一秒安静】",
+    "variables": [
+      {
+        "key": "question",
+        "label": "开场问题",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "为什么雨后的空气闻起来不一样"
+      },
+      {
+        "key": "answer",
+        "label": "简短解释",
+        "type": "text",
+        "required": true,
+        "max_length": 160,
+        "default": "雨滴把土壤和植物中的气味带进了空气"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "heart-podcast",
+    "source": "builtin",
+    "version": 2,
+    "name": "情感对谈",
+    "mode": "podcast",
+    "description": "温和讨论日常心事，保留倾听与停顿。",
+    "tags": [
+      "情感对谈",
+      "双人"
+    ],
+    "role_count": 2,
+    "suggested_duration_seconds": 45,
+    "prompt_pattern": "【角色：来信人（成年女性，略迟疑，诚恳）】\n【角色：朋友（成年男性，温柔平静）】\n【音乐：很轻的木吉他，留出说话空间】\n【对白：来信人】我最近{{topic}}，有时候连休息都不太安心。\n【对白：朋友】我能听出你已经很努力了。要不要先说说，今天让你轻松了一点的事？\n【对白：来信人】回家的路上，我抬头看了一会儿晚霞。\n【对白：朋友】那就从这一小会儿开始。我们不急着给每一天打分。",
+    "variables": [
+      {
+        "key": "topic",
+        "label": "聊天主题",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "总觉得自己走得太慢"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "intro-podcast",
+    "source": "builtin",
+    "version": 2,
+    "name": "节目片头",
+    "mode": "podcast",
+    "description": "一个主题、一句邀请，形成简洁节目开场。",
+    "tags": [
+      "节目片头",
+      "单人"
+    ],
+    "role_count": 1,
+    "suggested_duration_seconds": 20,
+    "prompt_pattern": "【音乐：两声温润木琴接轻巧弦乐，三秒后降低音量】\n【角色：主持人（成年女性，清亮松弛，微笑说话）】\n【对白：主持人】欢迎来到《{{show}}》。把耳机戴好，我们一起聊聊{{topic}}。\n【音效：轻轻翻开一本笔记，短暂停顿】\n【对白：主持人】这一段时间，留给好奇，也留给你自己。\n【音乐：轻柔收束，干净进入正片】",
+    "variables": [
+      {
+        "key": "show",
+        "label": "节目名称",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "慢慢有声"
+      },
+      {
+        "key": "topic",
+        "label": "本期主题",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "那些被重新拾起的爱好"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "weekend-podcast",
+    "source": "builtin",
+    "version": 2,
+    "name": "周末生活闲聊",
+    "mode": "podcast",
+    "description": "两位朋友交换没有计划的周末。",
+    "tags": [
+      "周末生活闲聊",
+      "双人"
+    ],
+    "role_count": 2,
+    "suggested_duration_seconds": 40,
+    "prompt_pattern": "【角色：朋友甲（青年女性，活泼但不抢话）】\n【角色：朋友乙（青年男性，舒展自然）】\n【音效：远处自行车铃，微风，背景始终很轻】\n【对白：朋友甲】我周末去了{{place}}，本来只打算待十分钟。\n【对白：朋友乙】让我猜，最后待到了天黑？\n【对白：朋友甲】差不多。碰巧遇到一个特别会讲故事的摊主。\n【对白：朋友乙】这种没有安排好的小插曲，听起来比计划还好。\n【音效：两人短促自然的笑声，环境声淡出】",
+    "variables": [
+      {
+        "key": "place",
+        "label": "周末地点",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "河边旧书市集"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "tech-ad",
+    "source": "builtin",
+    "version": 2,
+    "name": "科技产品",
+    "mode": "advertisement",
+    "description": "一个真实使用瞬间，带出产品的价值。",
+    "tags": [
+      "科技产品",
+      "单人"
+    ],
+    "role_count": 1,
+    "suggested_duration_seconds": 25,
+    "prompt_pattern": "【角色：旁白（成年女性，清晰利落，温暖有分寸）】\n【音效：窗帘拉上，设备启动的轻提示音】\n【对白：旁白】空白的墙，今晚有了新的故事。\n【音乐：轻快电子节拍进入，力度克制】\n【对白：旁白】{{brand}}{{product}}，把你喜欢的画面，带到想停留的地方。\n【音效：短促遥控按键声】\n【对白：旁白】关掉忙碌，打开这一刻。\n【音乐：一句台词之后干净收尾】",
+    "variables": [
+      {
+        "key": "brand",
+        "label": "品牌名称",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "行光"
+      },
+      {
+        "key": "product",
+        "label": "产品名称",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "便携投影仪"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "coffee-ad",
+    "source": "builtin",
+    "version": 2,
+    "name": "咖啡门店",
+    "mode": "advertisement",
+    "description": "杯沿、蒸汽与街角，讲一个温暖的小停留。",
+    "tags": [
+      "咖啡门店",
+      "单人"
+    ],
+    "role_count": 1,
+    "suggested_duration_seconds": 25,
+    "prompt_pattern": "【音效：店门轻响，磨豆机短暂运转，热水流入杯中】\n【角色：旁白（成年男性，温暖自然，语速舒缓）】\n【对白：旁白】在下一个消息到来之前，先听听咖啡落进杯子的声音。\n【音乐：轻柔木吉他，在人声下方缓缓进入】\n【音效：瓷杯轻放在木桌，留半秒停顿】\n【对白：旁白】{{brand}}。{{tagline}}。\n【音乐：随着门外微弱街声轻轻淡出】",
+    "variables": [
+      {
+        "key": "brand",
+        "label": "门店名称",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "木雀咖啡"
+      },
+      {
+        "key": "tagline",
+        "label": "落版文案",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "给这一刻，留一点香气"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "event-ad",
+    "source": "builtin",
+    "version": 2,
+    "name": "活动预告",
+    "mode": "advertisement",
+    "description": "把地点与时间清楚说完，节奏轻快。",
+    "tags": [
+      "活动预告",
+      "单人"
+    ],
+    "role_count": 1,
+    "suggested_duration_seconds": 25,
+    "prompt_pattern": "【音乐：明亮木琴与轻节拍，开场两秒后压低】\n【角色：播音员（青年女性，热情清楚，避免大喊）】\n【对白：播音员】带一本你舍不得合上的书，来见见同样爱读书的人。\n【音效：几页书轻轻翻动】\n【对白：播音员】{{date}}，{{event}}将在{{place}}与你见面。\n【对白：播音员】故事不用准备得很完整，愿意分享，就已经是好的开头。\n【音乐：清楚落点，短尾音结束】",
+    "variables": [
+      {
+        "key": "event",
+        "label": "活动名称",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "城市夜读会"
+      },
+      {
+        "key": "date",
+        "label": "活动时间",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "这个周六晚七点"
+      },
+      {
+        "key": "place",
+        "label": "活动地点",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "河畔书屋"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "brand-story-ad",
+    "source": "builtin",
+    "version": 2,
+    "name": "品牌故事",
+    "mode": "advertisement",
+    "description": "从制作细节出发，表达品牌的认真。",
+    "tags": [
+      "品牌故事",
+      "单人"
+    ],
+    "role_count": 1,
+    "suggested_duration_seconds": 35,
+    "prompt_pattern": "【音效：工坊内轻柔打磨声，工具被放回桌面】\n【角色：旁白（成年女性，朴实沉稳，句间稍有停顿）】\n【对白：旁白】在这里，每一件作品都要慢慢经过双手。\n【对白：旁白】我们记住{{material}}，也记住使用它的人，会怎样度过日常。\n【音乐：柔和弦乐渐入，保持很低音量】\n【对白：旁白】{{brand}}。把认真放进细节，把温度留在生活里。\n【音效：轻轻关上工坊木门，音乐淡出】",
+    "variables": [
+      {
+        "key": "brand",
+        "label": "品牌名称",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "青禾手作"
+      },
+      {
+        "key": "material",
+        "label": "工艺细节",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "木头上的细纹"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "sale-ad",
+    "source": "builtin",
+    "version": 2,
+    "name": "限时促销",
+    "mode": "advertisement",
+    "description": "优惠、期限和行动信息简洁可懂。",
+    "tags": [
+      "限时促销",
+      "单人"
+    ],
+    "role_count": 1,
+    "suggested_duration_seconds": 20,
+    "prompt_pattern": "【音乐：轻快明亮的节拍，简洁不吵闹】\n【角色：播音员（青年男性，清楚有活力）】\n【对白：播音员】想换一份轻松，从生活里的小物开始。\n【音效：一声清脆提示音】\n【对白：播音员】{{brand}}，{{offer}}。活动截至{{date}}，具体规则请查看门店说明。\n【对白：播音员】挑你真正喜欢的，让每一天用起来更顺手。\n【音乐：短促收束，不拖长结尾】",
+    "variables": [
+      {
+        "key": "brand",
+        "label": "品牌名称",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "轻装生活"
+      },
+      {
+        "key": "offer",
+        "label": "优惠信息",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "夏日好物低至八折"
+      },
+      {
+        "key": "date",
+        "label": "截止时间",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "本周日"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "sound-logo-ad",
+    "source": "builtin",
+    "version": 2,
+    "name": "品牌声音 Logo",
+    "mode": "advertisement",
+    "description": "几颗音符、一句品牌名，留下轻巧记忆。",
+    "tags": [
+      "品牌声音 Logo",
+      "单人"
+    ],
+    "role_count": 1,
+    "suggested_duration_seconds": 8,
+    "prompt_pattern": "【音效：三颗由低到高的圆润木琴音符，节奏为短、短、长】\n【音乐：最后一个音下方出现很轻的空气感和弦，不使用鼓点】\n【角色：品牌声线（中性，亲切清楚，自然微笑）】\n【对白：品牌声线】{{brand}}，{{tagline}}。\n【音效：对白后保留半秒柔和尾响，再完全静止】\n【节奏：整体紧凑，不重复品牌名，不添加其他台词】",
+    "variables": [
+      {
+        "key": "brand",
+        "label": "品牌名称",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "回声计划"
+      },
+      {
+        "key": "tagline",
+        "label": "品牌短句",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "听见新的可能"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "rooftop-story",
+    "source": "builtin",
+    "version": 2,
+    "name": "都市叙事",
+    "mode": "audiobook",
+    "description": "在普通的城市夜晚，写一段细小转折。",
+    "tags": [
+      "都市叙事",
+      "双人"
+    ],
+    "role_count": 2,
+    "suggested_duration_seconds": 45,
+    "prompt_pattern": "【角色：旁白（成年女性，沉静，叙述节奏从容）】\n【角色：{{name}}（成年男性，有些疲倦，语气真诚）】\n【音效：{{place}}，远处车流低鸣，一阵晚风】\n【对白：旁白】那天回家后，{{name}}没有立刻开灯。他走上楼顶，发现晾衣绳上还挂着一只忘收的布袋。\n【对白：{{name}}】原来今天，也有东西在等我。\n【对白：旁白】他把布袋收好。楼下有人喊开饭，城市忽然不再那么遥远。\n【音乐：温和钢琴在最后一句之后进入】",
+    "variables": [
+      {
+        "key": "name",
+        "label": "人物名字",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "许安"
+      },
+      {
+        "key": "place",
+        "label": "地点",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "旧公寓的天台"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "forest-audiobook",
+    "source": "builtin",
+    "version": 2,
+    "name": "奇幻冒险",
+    "mode": "audiobook",
+    "description": "跟随一盏小灯走进有回声的森林。",
+    "tags": [
+      "奇幻冒险",
+      "双人"
+    ],
+    "role_count": 2,
+    "suggested_duration_seconds": 45,
+    "prompt_pattern": "【角色：旁白（成年男性，沉稳，有探索感）】\n【角色：{{name}}（青年女性，轻声但坚定）】\n【音效：森林叶片沙沙，靴子踏过湿软泥土】\n【对白：旁白】{{object}}第一次停止转动时，{{name}}看见树干之间亮起了一排细小的灯。\n【对白：{{name}}】原来你指的方向，真的在这里。\n【音效：远处石门缓缓开启，一道空旷回声】\n【对白：旁白】她收好罗盘，向那道从未出现在地图上的入口走去。\n【音乐：轻柔神秘弦乐渐起】",
+    "variables": [
+      {
+        "key": "name",
+        "label": "主角名字",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "小岚"
+      },
+      {
+        "key": "object",
+        "label": "关键物件",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "蓝色罗盘"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "mystery-audiobook",
+    "source": "builtin",
+    "version": 2,
+    "name": "悬疑章节",
+    "mode": "audiobook",
+    "description": "用一个不合常理的细节制造悬念。",
+    "tags": [
+      "悬疑章节",
+      "双人"
+    ],
+    "role_count": 2,
+    "suggested_duration_seconds": 40,
+    "prompt_pattern": "【角色：旁白（成年女性，低声克制，逐渐放慢）】\n【角色：{{name}}（成年男性，谨慎困惑）】\n【音效：老钟滴答，纸张滑过桌面，走廊十分安静】\n【对白：旁白】{{name}}在信封里找到{{object}}。寄件日期是明天，邮戳却已经褪了色。\n【对白：{{name}}】这封信，究竟从哪里来？\n【音效：走廊尽头响起两下轻敲，时钟突然停住】\n【对白：旁白】他回过头。门缝下，第二封信正缓缓被推了进来。",
+    "variables": [
+      {
+        "key": "name",
+        "label": "人物名字",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "林初"
+      },
+      {
+        "key": "object",
+        "label": "线索物件",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "一张空白车票"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "fairytale-audiobook",
+    "source": "builtin",
+    "version": 2,
+    "name": "童话故事",
+    "mode": "audiobook",
+    "description": "柔软声线讲述小角色的勇敢尝试。",
+    "tags": [
+      "童话故事",
+      "双人"
+    ],
+    "role_count": 2,
+    "suggested_duration_seconds": 45,
+    "prompt_pattern": "【角色：旁白（成年女性，温柔清楚，儿童故事讲述感）】\n【角色：{{name}}（清亮活泼，带一点害羞）】\n【音效：草地轻风，小脚步穿过落叶】\n【对白：旁白】{{name}}想把{{gift}}送给新搬来的邻居。可是站在门前，它把准备好的话全忘了。\n【对白：{{name}}】你好。我找到了这个，觉得你可能会喜欢。\n【音效：木门打开，一声轻柔的惊喜笑声】\n【对白：旁白】原来交朋友的第一句话，可以这么短，也可以这么暖。",
+    "variables": [
+      {
+        "key": "name",
+        "label": "主角名字",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "小刺猬"
+      },
+      {
+        "key": "gift",
+        "label": "想送的礼物",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "一颗发亮的栗子"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "history-audiobook",
+    "source": "builtin",
+    "version": 2,
+    "name": "历史故事",
+    "mode": "audiobook",
+    "description": "以虚构人物呈现古代生活的细节。",
+    "tags": [
+      "历史故事",
+      "双人"
+    ],
+    "role_count": 2,
+    "suggested_duration_seconds": 50,
+    "prompt_pattern": "【角色：旁白（成年男性，平实厚重，吐字清楚）】\n【角色：{{name}}（青年女性，机敏认真）】\n【音效：{{place}}清晨的石板路，木轮车缓慢经过】\n【对白：旁白】这是一段发生在古代街巷的虚构故事。天刚亮，{{name}}已经把写好的家书交给了驿站伙计。\n【对白：{{name}}】路远，请替我护好它。\n【对白：旁白】薄薄一张纸，装着四季的问候。马铃响起时，她一直站在街口，直到声音消失。\n【音乐：稀疏古琴，收尾留白】",
+    "variables": [
+      {
+        "key": "place",
+        "label": "故事地点",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "江南小镇"
+      },
+      {
+        "key": "name",
+        "label": "人物名字",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "阿宁"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "essay-audiobook",
+    "source": "builtin",
+    "version": 2,
+    "name": "生活散文",
+    "mode": "audiobook",
+    "description": "让平常物件承载缓慢而细腻的感受。",
+    "tags": [
+      "生活散文",
+      "单人"
+    ],
+    "role_count": 1,
+    "suggested_duration_seconds": 40,
+    "prompt_pattern": "【角色：朗读者（成年女性，自然沉静，句末轻落）】\n【音效：午后窗边微风，偶尔很轻的鸟鸣】\n【对白：朗读者】我把{{object}}搬到窗边。阳光一点点移过来，像有人轻轻把一封信推到面前。\n【对白：朗读者】那些急着完成的事，忽然可以再等一会儿。我坐下来，听楼下有人浇花，听远处的门开了又关。\n【对白：朗读者】日子没有给我什么答案，却给了我一个可以安静坐着的下午。\n【音乐：结尾两声钢琴，轻轻淡出】",
+    "variables": [
+      {
+        "key": "object",
+        "label": "日常物件",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "一把旧木椅"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "ancient-drama",
+    "source": "builtin",
+    "version": 2,
+    "name": "古风相逢",
+    "mode": "drama",
+    "description": "雨亭重逢，一问一答间留出情绪。",
+    "tags": [
+      "古风相逢",
+      "双人"
+    ],
+    "role_count": 2,
+    "suggested_duration_seconds": 35,
+    "prompt_pattern": "【音效：檐角滴雨，衣袖掠过木栏，远处马铃渐远】\n【角色：旅人（青年女性，清冷，惊讶藏在停顿中）】\n【角色：{{name}}（青年男性，温和克制）】\n【对白：旅人】这把伞，你竟还留着。\n【对白：{{name}}】修了两次。总想着，哪天还能还给你。\n【音效：雨势略小，伞面轻轻展开】\n【对白：旅人】那就先借我走过这段路。\n【对白：{{name}}】好。这次，我认得回去的方向。\n【音乐：单支笛音在对白后响起】",
+    "variables": [
+      {
+        "key": "name",
+        "label": "旧友名字",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "沈舟"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "family-drama",
+    "source": "builtin",
+    "version": 2,
+    "name": "家庭对话",
+    "mode": "drama",
+    "description": "一顿晚饭里的关心，说得轻一点。",
+    "tags": [
+      "家庭对话",
+      "双人"
+    ],
+    "role_count": 2,
+    "suggested_duration_seconds": 35,
+    "prompt_pattern": "【音效：厨房锅盖轻响，汤汁小火翻滚，碗筷放上桌】\n【角色：母亲（中年女性，亲切，故作随意）】\n【角色：女儿（青年女性，下班后的疲惫，渐渐放松）】\n【对白：母亲】今天煮了{{dish}}。先洗手，趁热吃。\n【对白：女儿】你怎么知道我想吃这个？\n【对白：母亲】上回你多夹了两筷子，我记着呢。\n【音效：椅子轻移，一小段安静】\n【对白：女儿】那今天，我也多吃一点。",
+    "variables": [
+      {
+        "key": "dish",
+        "label": "家常菜",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "番茄炖牛腩"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "midnight-store",
+    "source": "builtin",
+    "version": 2,
+    "name": "悬疑问询",
+    "mode": "drama",
+    "description": "旧物认领处的一场克制问答。",
+    "tags": [
+      "悬疑问询",
+      "双人"
+    ],
+    "role_count": 2,
+    "suggested_duration_seconds": 40,
+    "prompt_pattern": "【音效：夜班服务台，日光灯低鸣，抽屉拉开又停住】\n【角色：值班员（成年男性，疲倦但警觉）】\n【角色：来访者（成年女性，平静，回答前略停顿）】\n【对白：值班员】你说丢的是{{object}}？请描述一下失物袋上的号码。\n【对白：来访者】没有号码。袋子背面写着你的名字。\n【音效：纸袋翻转，椅子短促摩擦地面】\n【对白：值班员】这是谁交来的？\n【对白：来访者】我也在等他回来。",
+    "variables": [
+      {
+        "key": "object",
+        "label": "失物线索",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "一把没有齿的钥匙"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "airlock-drama",
+    "source": "builtin",
+    "version": 2,
+    "name": "科幻救援",
+    "mode": "drama",
+    "description": "清楚的任务指令与紧张的呼吸交替。",
+    "tags": [
+      "科幻救援",
+      "双人"
+    ],
+    "role_count": 2,
+    "suggested_duration_seconds": 35,
+    "prompt_pattern": "【音效：{{station}}气闸旁低频警报，通讯器短促电流声】\n【角色：领航员（成年女性，沉着，指令清晰）】\n【角色：维修员（成年男性，喘息但保持清醒）】\n【对白：领航员】听我数拍。看见黄色扶手，就停下来。\n【对白：维修员】看见了。安全绳还差一小段。\n【音效：金属锁扣卡入，警报音降低】\n【对白：领航员】锁住了。现在，跟着我的声音往回走。\n【对白：维修员】收到。谢谢你一直没有松手。",
+    "variables": [
+      {
+        "key": "station",
+        "label": "空间站名称",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "曙光站"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "comedy-drama",
+    "source": "builtin",
+    "version": 2,
+    "name": "喜剧误会",
+    "mode": "drama",
+    "description": "围绕一件小事制造轻松的错位对话。",
+    "tags": [
+      "喜剧误会",
+      "双人"
+    ],
+    "role_count": 2,
+    "suggested_duration_seconds": 30,
+    "prompt_pattern": "【音效：电梯叮的一声，纸箱被放在门口】\n【角色：邻居甲（青年男性，急切认真）】\n【角色：邻居乙（青年女性，轻松，忍着笑）】\n【对白：邻居甲】快来！我收到的包裹，刚刚好像动了一下。\n【对白：邻居乙】你先打开看看。\n【音效：胶带撕开，纸屑窸窣】\n【对白：邻居甲】怎么是{{object}}？\n【对白：邻居乙】窗户没关。你刚才，是被一阵风吓到了。\n【音效：两人自然发笑，不使用夸张罐头笑声】",
+    "variables": [
+      {
+        "key": "object",
+        "label": "包裹物件",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "一盆薄荷"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "reunion-drama",
+    "source": "builtin",
+    "version": 2,
+    "name": "离别重逢",
+    "mode": "drama",
+    "description": "列车停站时，熟悉的话终于说出口。",
+    "tags": [
+      "离别重逢",
+      "双人"
+    ],
+    "role_count": 2,
+    "suggested_duration_seconds": 40,
+    "prompt_pattern": "【音效：{{place}}站台，列车刹车声渐弱，旅客脚步远去】\n【角色：归来者（成年女性，感慨，声音有一点颤动）】\n【角色：等候者（成年男性，温和笃定）】\n【对白：归来者】我以为你早就不记得这班车了。\n【对白：等候者】时间改过三次，我都查了。\n【音效：行李箱轮子停止，短暂安静】\n【对白：归来者】那，回家吧。\n【对白：等候者】嗯。你喜欢的那家店，今天还开着。\n【音乐：温暖弦乐从极弱渐入】",
+    "variables": [
+      {
+        "key": "place",
+        "label": "重逢地点",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "南河站"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "village-elder",
+    "source": "builtin",
+    "version": 2,
+    "name": "村庄任务",
+    "mode": "game",
+    "description": "友好委托，清楚交代地点与目标。",
+    "tags": [
+      "村庄任务",
+      "单人"
+    ],
+    "role_count": 1,
+    "suggested_duration_seconds": 25,
+    "prompt_pattern": "【音效：村口树叶轻响，远处溪水，木杖落地一下】\n【角色：村中长者（年长男性，慈祥清楚，语速舒缓）】\n【对白：村中长者】旅人，若你打算去{{place}}，能替我们带回一些{{item}}吗？\n【对白：村中长者】那里路滑，记得沿着石阶走。天黑前回来，灶上的热汤给你留着。\n【音效：布袋轻轻递出，溪水声保留半秒后淡出】",
+    "variables": [
+      {
+        "key": "place",
+        "label": "任务地点",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "东坡风车旁"
+      },
+      {
+        "key": "item",
+        "label": "任务物品",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "银铃草"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "dungeon-merchant",
+    "source": "builtin",
+    "version": 2,
+    "name": "商店交易",
+    "mode": "game",
+    "description": "道具亮相与价格说明，适合交互触发。",
+    "tags": [
+      "商店交易",
+      "单人"
+    ],
+    "role_count": 1,
+    "suggested_duration_seconds": 20,
+    "prompt_pattern": "【音效：营地篝火轻响，包袱解开，布料抖动】\n【角色：商人（中年女性，爽快热情，低声招呼）】\n【对白：商人】来看看这件{{item}}。山里的天气说变就变，备着总安心。\n【对白：商人】{{price}}，再送你一小包干粮。买不买都行，先在火边歇歇脚。\n【音效：钱袋轻碰木柜，火声淡出】",
+    "variables": [
+      {
+        "key": "item",
+        "label": "商品名称",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "防雨斗篷"
+      },
+      {
+        "key": "price",
+        "label": "交易价格",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "十枚铜币"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "battle-game",
+    "source": "builtin",
+    "version": 2,
+    "name": "战斗提醒",
+    "mode": "game",
+    "description": "短句明确方位与动作，信息先于情绪。",
+    "tags": [
+      "战斗提醒",
+      "单人"
+    ],
+    "role_count": 1,
+    "suggested_duration_seconds": 12,
+    "prompt_pattern": "【角色：队友（青年女性，紧张坚定，吐字清楚）】\n【音效：远处沉重脚步逼近，盾牌短促碰撞】\n【对白：队友】{{enemy}}在右侧！先退到石柱后面！\n【音效：一声撞击，碎石散落，声音不覆盖对白】\n【对白：队友】就是现在，绕过去！我来守住入口！\n【节奏：两句台词之间短暂停顿，结尾利落，无配乐拖尾】",
+    "variables": [
+      {
+        "key": "enemy",
+        "label": "危险名称",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "岩甲兽"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "repair-game",
+    "source": "builtin",
+    "version": 2,
+    "name": "维修指引",
+    "mode": "game",
+    "description": "顺序清楚的操作指令，配合反馈音。",
+    "tags": [
+      "维修指引",
+      "单人"
+    ],
+    "role_count": 1,
+    "suggested_duration_seconds": 25,
+    "prompt_pattern": "【音效：{{device}}轻微低鸣，面板间歇提示】\n【角色：工程师（成年男性，冷静耐心，像通过耳机指导）】\n【对白：工程师】先把左侧旋钮转到白色刻度。对，别急，等灯光稳定。\n【音效：旋钮轻响，确认提示音】\n【对白：工程师】现在合上下面的开关。很好，{{device}}恢复了。离开前检查一下防护盖。\n【音效：设备低鸣趋于平稳，最后一声卡扣闭合】",
+    "variables": [
+      {
+        "key": "device",
+        "label": "设备名称",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "能源稳定器"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "explore-game",
+    "source": "builtin",
+    "version": 2,
+    "name": "探索发现",
+    "mode": "game",
+    "description": "让环境先说话，再给出发现提示。",
+    "tags": [
+      "探索发现",
+      "单人"
+    ],
+    "role_count": 1,
+    "suggested_duration_seconds": 20,
+    "prompt_pattern": "【音效：石门缓缓推开，脚步进入空旷空间，细小水滴回声】\n【角色：探险者（青年女性，惊讶但压低声音）】\n【对白：探险者】看这里。墙上的光点，还在按照同一个方向移动。\n【音效：古老机关柔和启动】\n【对白：探险者】我们找到{{place}}了。先别碰中央的石台，记下这些位置。\n【音乐：极轻的探索感和弦，短暂浮现后淡出】",
+    "variables": [
+      {
+        "key": "place",
+        "label": "发现地点",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "地下星图室"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "victory-game",
+    "source": "builtin",
+    "version": 2,
+    "name": "胜利结算",
+    "mode": "game",
+    "description": "有成就感且简洁的任务完成播报。",
+    "tags": [
+      "胜利结算",
+      "单人"
+    ],
+    "role_count": 1,
+    "suggested_duration_seconds": 15,
+    "prompt_pattern": "【音效：明亮但柔和的完成提示音，两下轻鼓点】\n【角色：播报员（中性青年声线，清楚、有喜悦感）】\n【对白：播报员】任务完成：{{task}}。\n【音乐：温暖弦乐上扬，保持短促】\n【对白：播报员】新的道路已经开启。整理好行囊，我们继续出发。\n【音效：最后一颗清澈音符与音乐同时收束，不循环】",
+    "variables": [
+      {
+        "key": "task",
+        "label": "完成任务",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "修复山谷信标"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "ai-narration",
+    "source": "builtin",
+    "version": 2,
+    "name": "科技解说",
+    "mode": "narration",
+    "description": "用一个直观比喻解释技术概念。",
+    "tags": [
+      "科技解说",
+      "单人"
+    ],
+    "role_count": 1,
+    "suggested_duration_seconds": 30,
+    "prompt_pattern": "【角色：旁白（成年男性，清晰自然，可信克制）】\n【音乐：低音量现代电子氛围，节奏平稳】\n【对白：旁白】理解{{topic}}，可以先从一个简单的画面开始：{{metaphor}}。\n【对白：旁白】好的工具会降低尝试的门槛，但具体怎么表达，仍然需要创作者做出选择。\n【对白：旁白】先用一个小场景验证，再把有效的方法放进自己的工作流。\n【音效：结尾轻柔提示音，音乐淡出】",
+    "variables": [
+      {
+        "key": "topic",
+        "label": "技术主题",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "语音合成"
+      },
+      {
+        "key": "metaphor",
+        "label": "直观解释",
+        "type": "text",
+        "required": true,
+        "max_length": 160,
+        "default": "把文字里的意思、节奏和情绪，变成可以听见的声音"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "nature-narration",
+    "source": "builtin",
+    "version": 2,
+    "name": "自然纪录片",
+    "mode": "narration",
+    "description": "自然声先入场，旁白保留呼吸空间。",
+    "tags": [
+      "自然纪录片",
+      "单人"
+    ],
+    "role_count": 1,
+    "suggested_duration_seconds": 35,
+    "prompt_pattern": "【音效：{{place}}清晨，微风吹过草叶，远处零星鸟鸣】\n【角色：旁白（成年女性，沉静温柔，纪录片讲述感）】\n【对白：旁白】雾气缓缓散开，水面上留下第一道柔和的光。\n【音效：浅水轻响，留一秒环境声】\n【对白：旁白】一只{{animal}}停在岸边。它并不急着向前，仿佛在等待这个清晨给出信号。\n【音乐：稀疏弦乐很轻地进入，始终低于自然声与人声】",
+    "variables": [
+      {
+        "key": "place",
+        "label": "自然场景",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "山间湿地"
+      },
+      {
+        "key": "animal",
+        "label": "观察对象",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "白鹭"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "tutorial-narration",
+    "source": "builtin",
+    "version": 2,
+    "name": "产品教程",
+    "mode": "narration",
+    "description": "三步操作与反馈清楚对应。",
+    "tags": [
+      "产品教程",
+      "单人"
+    ],
+    "role_count": 1,
+    "suggested_duration_seconds": 30,
+    "prompt_pattern": "【角色：讲解员（青年女性，亲切清楚，语速适中）】\n【音效：安静室内，无背景音乐】\n【对白：讲解员】接下来，用一分钟熟悉{{product}}。先检查电量，再把设备放在距离嘴巴一掌的位置。\n【对白：讲解员】准备好以后，{{step}}。\n【音效：轻微按键声和一声确认提示】\n【对白：讲解员】说一句测试台词，回放确认音量。听得清楚，就可以正式开始了。",
+    "variables": [
+      {
+        "key": "product",
+        "label": "产品名称",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "桌面录音器"
+      },
+      {
+        "key": "step",
+        "label": "关键操作",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "按下圆形录音键"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "travel-narration",
+    "source": "builtin",
+    "version": 2,
+    "name": "旅行记录",
+    "mode": "narration",
+    "description": "用听见的细节记录一次慢步旅行。",
+    "tags": [
+      "旅行记录",
+      "单人"
+    ],
+    "role_count": 1,
+    "suggested_duration_seconds": 35,
+    "prompt_pattern": "【音效：{{place}}清晨，行李轮子经过路面，远处店铺卷帘门升起】\n【角色：记录者（成年女性，自然松弛，像旅行日记）】\n【对白：记录者】我到{{place}}的第一天，没有急着去看地图上标出来的地方。\n【对白：记录者】沿着街走，听见早餐摊的锅铲声，也听见有人隔着半条街打招呼。\n【音效：脚步停下，纸袋轻响】\n【对白：记录者】有时候，旅行从记住一个声音开始。\n【音乐：轻快木吉他，尾声淡出】",
+    "variables": [
+      {
+        "key": "place",
+        "label": "旅行地点",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "海边小城"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "course-narration",
+    "source": "builtin",
+    "version": 2,
+    "name": "课程导入",
+    "mode": "narration",
+    "description": "给出问题、学习目标与开始的邀请。",
+    "tags": [
+      "课程导入",
+      "单人"
+    ],
+    "role_count": 1,
+    "suggested_duration_seconds": 30,
+    "prompt_pattern": "【角色：讲师（成年男性，清楚友善，有引导感）】\n【音效：同一个脚步声先近后远，各一次，音量适中】\n【对白：讲师】刚才这两个声音，你觉得哪一个离你更近？\n【对白：讲师】这一节，我们聊{{topic}}。学完之后，你可以尝试{{goal}}。\n【对白：讲师】不用急着记住术语，先用耳朵观察。我们从一个很小的实验开始。\n【音乐：两秒简洁过渡音后结束】",
+    "variables": [
+      {
+        "key": "topic",
+        "label": "课程主题",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "声音里的空间感"
+      },
+      {
+        "key": "goal",
+        "label": "学习目标",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "用远近与混响描述一个场景"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "biography-narration",
+    "source": "builtin",
+    "version": 2,
+    "name": "人物故事",
+    "mode": "narration",
+    "description": "从具体行动讲述一位虚构人物。",
+    "tags": [
+      "人物故事",
+      "单人"
+    ],
+    "role_count": 1,
+    "suggested_duration_seconds": 40,
+    "prompt_pattern": "【音效：小店木门打开，工具轻碰桌面】\n【角色：旁白（成年女性，平实真诚，节奏舒缓）】\n【对白：旁白】在这段虚构故事里，{{name}}每天最早做的事，是把窗台上的灰擦干净。\n【对白：旁白】他做了很多年{{work}}，也听过许多顾客带来的往事。\n【音效：电流声短暂响起，随后一段模糊而轻的旋律】\n【对白：旁白】声音重新响起的时候，{{name}}总会退后一点，让那个久违的瞬间，先属于别人。",
+    "variables": [
+      {
+        "key": "name",
+        "label": "人物名字",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "陈师傅"
+      },
+      {
+        "key": "work",
+        "label": "日常工作",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "修理旧收音机"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "custom-scene",
+    "source": "builtin",
+    "version": 2,
+    "name": "单人声音场景",
+    "mode": "auto",
+    "description": "一个角色、一处空间，建立完整声音画面。",
+    "tags": [
+      "单人声音场景",
+      "单人"
+    ],
+    "role_count": 1,
+    "suggested_duration_seconds": 25,
+    "prompt_pattern": "【角色：{{role}}（成年女性，安静坚定，贴近自然说话）】\n【音效：{{place}}，风掠过窗框，远处海浪平稳起伏】\n【对白：{{role}}】灯已经亮了。再远一点的人，也能看见回来的方向。\n【音效：开关轻响，脚步缓慢走向窗边】\n【对白：{{role}}】今晚风大，路上慢一点。\n【音乐：温暖低音和弦，最后与海浪一起轻轻淡出】",
+    "variables": [
+      {
+        "key": "role",
+        "label": "角色名称",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "守灯人"
+      },
+      {
+        "key": "place",
+        "label": "声音空间",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "海边灯塔"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "duo-scene",
+    "source": "builtin",
+    "version": 2,
+    "name": "双人声音场景",
+    "mode": "auto",
+    "description": "用轮流接话呈现一次自然相遇。",
+    "tags": [
+      "双人声音场景",
+      "双人"
+    ],
+    "role_count": 2,
+    "suggested_duration_seconds": 30,
+    "prompt_pattern": "【音效：{{place}}，细雨持续，门铃轻响】\n【角色：店主（中年女性，爽朗细心）】\n【角色：客人（青年男性，略着急，随后放松）】\n【对白：客人】这把伞，还修得好吗？\n【对白：店主】伞骨没坏，换一根线就行。坐一会儿吧。\n【音效：工具轻响，布面被仔细拉平】\n【对白：客人】谢谢。我还以为只能扔掉了。\n【对白：店主】能修好的东西，就再陪你走一段。",
+    "variables": [
+      {
+        "key": "place",
+        "label": "场景地点",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "街角修伞铺"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "trio-scene",
+    "source": "builtin",
+    "version": 2,
+    "name": "三人声音场景",
+    "mode": "auto",
+    "description": "三种声线依次出现，避免台词交叠。",
+    "tags": [
+      "三人声音场景",
+      "三人"
+    ],
+    "role_count": 3,
+    "suggested_duration_seconds": 35,
+    "prompt_pattern": "【角色：领队（成年女性，清晰果断）】\n【角色：伙伴甲（青年男性，热情，音调略高）】\n【角色：伙伴乙（成年男性，低沉从容）】\n【音效：林间营地，布料展开，金属支杆轻碰】\n【对白：领队】今天先把{{task}}这件事完成。甲帮我撑住右边。\n【对白：伙伴甲】收到！这样高度够吗？\n【对白：伙伴乙】再抬一点。我把下面的扣子固定好。\n【音效：卡扣合上，三人放松呼气】\n【对白：领队】很好。现在，终于可以看看风景了。",
+    "variables": [
+      {
+        "key": "task",
+        "label": "共同任务",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "搭好露营帐篷"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "ambience-scene",
+    "source": "builtin",
+    "version": 2,
+    "name": "环境声主导",
+    "mode": "auto",
+    "description": "只用空间里的自然声音推进场景。",
+    "tags": [
+      "环境声主导",
+      "无人声"
+    ],
+    "role_count": 0,
+    "suggested_duration_seconds": 30,
+    "prompt_pattern": "【场景：{{place}}。全程无人声、无对白、无背景音乐】\n【音效顺序：先听见屋檐上残留的水滴，间隔不规则；随后微风穿过近处叶片】\n【空间：水滴在左侧近处，树叶位于正前方，远处偶尔有一声清淡鸟鸣】\n【节奏：保持自然安静，不要突然放大某个声音；中段风略增强，随后恢复平稳】\n【收尾：留下两颗水滴的轻响，整体缓慢淡出，避免突兀截断】",
+    "variables": [
+      {
+        "key": "place",
+        "label": "环境场景",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "雨后的庭院"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "custom-logo",
+    "source": "builtin",
+    "version": 2,
+    "name": "音效顺序实验",
+    "mode": "auto",
+    "description": "用三段清楚分离的声音观察先后关系。",
+    "tags": [
+      "音效顺序实验",
+      "无人声"
+    ],
+    "role_count": 0,
+    "suggested_duration_seconds": 15,
+    "prompt_pattern": "【场景：安静的小房间，全程无人声、无对白、无配乐】\n【音效顺序：第一段，{{first}}；留出约一秒安静；第二段，{{second}}；再留出约一秒安静；第三段，{{third}}】\n【空间：三个事件都在近处，保持音量大致一致，保留自然短混响】\n【约束：每个事件只出现一次，声音不要重叠；顺序明确，不要求精确时间对齐】\n【收尾：最后一个事件结束后留短暂静音，自然结束】",
+    "variables": [
+      {
+        "key": "first",
+        "label": "第一种声音",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "钥匙放在木桌上"
+      },
+      {
+        "key": "second",
+        "label": "第二种声音",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "玻璃杯轻轻碰响"
+      },
+      {
+        "key": "third",
+        "label": "第三种声音",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "木门缓慢关闭"
+      }
+    ],
+    "params_preset": null
+  },
+  {
+    "id": "music-scene",
+    "source": "builtin",
+    "version": 2,
+    "name": "纯音乐氛围",
+    "mode": "auto",
+    "description": "没有台词，探索克制的音乐质感与起落。",
+    "tags": [
+      "纯音乐氛围",
+      "无人声"
+    ],
+    "role_count": 0,
+    "suggested_duration_seconds": 30,
+    "prompt_pattern": "【音乐：一段表现{{mood}}的原创纯音乐氛围，主要使用{{instrument}}】\n【结构：开头由单件乐器给出稀疏动机，中段轻轻加入和声，末段减少音符并自然收束】\n【音色：温润，空间感适中，不使用尖锐高频或沉重低音】\n【节奏：舒缓而稳定，保留足够留白，不突然转调或提速】\n【约束：全程无人声、无哼唱、无语言片段，也不加入环境音效】",
+    "variables": [
+      {
+        "key": "mood",
+        "label": "音乐情绪",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "清晨醒来时的平静"
+      },
+      {
+        "key": "instrument",
+        "label": "主要乐器",
+        "type": "text",
+        "required": true,
+        "max_length": 80,
+        "default": "柔和钢琴与木吉他"
+      }
+    ],
+    "params_preset": null
+  }
+]

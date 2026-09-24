@@ -1,10 +1,10 @@
 import "@testing-library/jest-dom/vitest";
-import {cleanup} from "@testing-library/react";
-import {afterEach} from "vitest";
+import { cleanup } from "@testing-library/react";
+import { afterEach } from "vitest";
 
 Object.defineProperty(HTMLMediaElement.prototype, "pause", {
   configurable: true,
-  value: () => undefined
+  value: () => undefined,
 });
 
 // Node's experimental global localStorage leaks into jsdom and has no clear().
@@ -39,11 +39,11 @@ class MemoryStorage implements Storage {
 const storage = new MemoryStorage();
 Object.defineProperty(globalThis, "localStorage", {
   configurable: true,
-  value: storage
+  value: storage,
 });
 Object.defineProperty(window, "localStorage", {
   configurable: true,
-  value: storage
+  value: storage,
 });
 
 afterEach(() => cleanup());

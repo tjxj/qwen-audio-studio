@@ -1,17 +1,17 @@
-import {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ApiError,
   createProject,
   duplicateProject,
   getProject,
   saveProject,
-  type ProjectPatch
+  type ProjectPatch,
 } from "../../api";
 import {
   DEFAULT_PARAMS,
   type DraftFields,
   type Project,
-  type SaveState
+  type SaveState,
 } from "../../types";
 
 export const AUTOSAVE_DELAY_MS = 800;
@@ -30,7 +30,7 @@ function defaultFields(fallback?: Partial<DraftFields>): DraftFields {
     referenceBindings: [],
     outputDirectoryId: null,
     templateApplication: null,
-    ...fallback
+    ...fallback,
   };
 }
 
@@ -42,7 +42,7 @@ function fieldsOf(project: Project): DraftFields {
     params: project.params,
     referenceBindings: project.referenceBindings,
     outputDirectoryId: project.outputDirectoryId,
-    templateApplication: project.templateApplication
+    templateApplication: project.templateApplication,
   };
 }
 
@@ -85,10 +85,11 @@ export interface ProjectDraftController {
   projectId: string | null;
   state: SaveState;
   message: string;
-  conflict: {serverRevision: number} | null;
+  conflict: { serverRevision: number } | null;
   recovered: DraftFields | null;
   change: (patch: Partial<DraftFields>) => void;
   saveNow: () => Promise<boolean>;
+  getIdentity: () => { id: string | null; revision: number };
   resolveConflictByReload: () => Promise<void>;
   resolveConflictByCopy: () => Promise<string | null>;
   applyRecovered: () => void;
@@ -99,17 +100,19 @@ export function useProjectDraft({
   projectId,
   loaded,
   fallback,
-  onProjectCreated
+  onProjectCreated,
 }: UseProjectDraftOptions): ProjectDraftController {
   const initial = loaded ? fieldsOf(loaded) : defaultFields(fallback);
   const [fields, setFields] = useState<DraftFields>(initial);
   const [revision, setRevision] = useState(loaded?.revision ?? 0);
   const [activeId, setActiveId] = useState<string | null>(
-    loaded?.id ?? projectId ?? null
+    loaded?.id ?? projectId ?? null,
   );
   const [state, setState] = useState<SaveState>("clean");
   const [message, setMessage] = useState("");
-  const [conflict, setConflict] = useState<{serverRevision: number} | null>(null);
+  const [conflict, setConflict] = useState<{ serverRevision: number } | null>(
+    null,
+  );
   const [recovered, setRecovered] = useState<DraftFields | null>(null);
 
   const fieldsRef = useRef(fields);
@@ -118,7 +121,11 @@ export function useProjectDraft({
   const timerRef = useRef<number | null>(null);
   const runningRef = useRef(false);
   const queuedRef = useRef(false);
-  const lastResultRef = useRef(true);
+  const flightRef = useRef<Promise<boolean> | null>(null);
+  const resolutionBarrierRef = useRef<Promise<void> | null>(null);
+  const pendingCreatedIdRef = useRef<string | null>(null);
+  const onCreatedRef = useRef(onProjectCreated);
+  onCreatedRef.current = onProjectCreated;
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -133,84 +140,100 @@ export function useProjectDraft({
     if (!loaded && projectId) return;
     const copy = key ? readRecovery(key) : readRecovery(null);
     if (!copy) return;
-    if (loaded && JSON.stringify(copy) === JSON.stringify(fieldsOf(loaded))) return;
+    if (loaded && JSON.stringify(copy) === JSON.stringify(fieldsOf(loaded)))
+      return;
     setRecovered(copy);
   }, [loaded, projectId]);
 
-  const settle = useCallback(
-    (next: SaveState, text = "") => {
-      if (!mountedRef.current) return;
-      setState(next);
-      setMessage(text);
-    },
-    []
-  );
+  const settle = useCallback((next: SaveState, text = "") => {
+    if (!mountedRef.current) return;
+    setState(next);
+    setMessage(text);
+  }, []);
 
-  const push = useCallback(async (): Promise<boolean> => {
-    if (runningRef.current) {
-      queuedRef.current = true;
-      return lastResultRef.current;
-    }
+  const push = useCallback((): Promise<boolean> => {
+    if (resolutionBarrierRef.current)
+      return resolutionBarrierRef.current.then(() => push());
+    // Every caller waits for the same drain, including edits made while awaiting HTTP.
+    if (flightRef.current) return flightRef.current;
     runningRef.current = true;
-    let ok = true;
-    do {
-      queuedRef.current = false;
-      const payload: ProjectPatch = {...fieldsRef.current};
-      const activeId = idRef.current;
-      settle("saving");
-      try {
-        if (!activeId) {
-          const created = await createProject(payload);
-          idRef.current = created.id;
-          if (mountedRef.current) setActiveId(created.id);
-          revisionRef.current = created.revision;
-          if (mountedRef.current) setRevision(created.revision);
-          onProjectCreated?.(created.id);
-        } else if (revisionRef.current) {
-          const saved = await saveProject(
-            activeId,
-            revisionRef.current,
-            payload
-          );
-          revisionRef.current = saved.revision;
-          if (mountedRef.current) setRevision(saved.revision);
-        } else {
-          const current = await getProject(activeId);
-          revisionRef.current = current.revision;
-          if (mountedRef.current) setRevision(current.revision);
-          queuedRef.current = true;
-          continue;
+    const drain = async (): Promise<boolean> => {
+      do {
+        queuedRef.current = false;
+        const snapshot = fieldsRef.current;
+        const payload: ProjectPatch = { ...snapshot };
+        const activeId = idRef.current;
+        settle("saving");
+        try {
+          if (!activeId) {
+            const created = await createProject(payload);
+            idRef.current = created.id;
+            revisionRef.current = created.revision;
+            pendingCreatedIdRef.current = created.id;
+            if (mountedRef.current) {
+              setActiveId(created.id);
+              setRevision(created.revision);
+            }
+          } else if (revisionRef.current) {
+            const saved = await saveProject(
+              activeId,
+              revisionRef.current,
+              payload,
+            );
+            revisionRef.current = saved.revision;
+            if (mountedRef.current) setRevision(saved.revision);
+          } else {
+            const current = await getProject(activeId);
+            revisionRef.current = current.revision;
+            if (mountedRef.current) setRevision(current.revision);
+            queuedRef.current = true;
+            continue;
+          }
+          if (snapshot === fieldsRef.current) {
+            clearRecovery(activeId);
+            clearRecovery(idRef.current);
+          } else {
+            // The response acknowledges only snapshot; newer text stays recoverable.
+            writeRecovery(idRef.current, fieldsRef.current);
+            queuedRef.current = true;
+          }
+          if (mountedRef.current) setConflict(null);
+        } catch (reason) {
+          const failure = reason instanceof ApiError ? reason : null;
+          writeRecovery(idRef.current, fieldsRef.current);
+          if (failure?.code === "REVISION_CONFLICT") {
+            const serverRevision = Number(
+              failure.details?.current_revision ?? revisionRef.current + 1,
+            );
+            if (mountedRef.current) setConflict({ serverRevision });
+            settle(
+              "conflict",
+              "这个项目已在别的标签页修改。本地内容还没有覆盖服务器版本。",
+            );
+          } else
+            settle(
+              "failed",
+              failure?.message || "保存失败，本地副本已保留，可稍后重试。",
+            );
+          queuedRef.current = false;
+          return false;
         }
-        clearRecovery(activeId);
-        clearRecovery(idRef.current);
-        ok = true;
-        if (mountedRef.current) setConflict(null);
-        settle("saved");
-      } catch (reason) {
-        ok = false;
-        const failure = reason instanceof ApiError ? reason : null;
-        writeRecovery(idRef.current, fieldsRef.current);
-        if (failure?.code === "REVISION_CONFLICT") {
-          const serverRevision = Number(
-            failure.details?.current_revision ?? revisionRef.current + 1
-          );
-          if (mountedRef.current) setConflict({serverRevision});
-          settle(
-            "conflict",
-            "这个项目已在别的标签页修改。本地内容还没有覆盖服务器版本。"
-          );
-        } else {
-          settle(
-            "failed",
-            failure?.message || "保存失败，本地副本已保留，可稍后重试。"
-          );
-        }
+      } while (queuedRef.current);
+      settle("saved");
+      if (pendingCreatedIdRef.current) {
+        clearRecovery(null);
+        const createdId = pendingCreatedIdRef.current;
+        pendingCreatedIdRef.current = null;
+        if (mountedRef.current) onCreatedRef.current?.(createdId);
       }
-      lastResultRef.current = ok;
-    } while (queuedRef.current);
-    runningRef.current = false;
-    return ok;
-  }, [onProjectCreated, settle]);
+      return true;
+    };
+    flightRef.current = drain().finally(() => {
+      runningRef.current = false;
+      flightRef.current = null;
+    });
+    return flightRef.current;
+  }, [settle]);
 
   const schedule = useCallback(() => {
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);
@@ -222,7 +245,7 @@ export function useProjectDraft({
 
   const change = useCallback(
     (patch: Partial<DraftFields>) => {
-      fieldsRef.current = {...fieldsRef.current, ...patch};
+      fieldsRef.current = { ...fieldsRef.current, ...patch };
       setFields(fieldsRef.current);
       writeRecovery(idRef.current, fieldsRef.current);
       if (runningRef.current) {
@@ -233,7 +256,7 @@ export function useProjectDraft({
         schedule();
       }
     },
-    [schedule]
+    [schedule],
   );
 
   const saveNow = useCallback(async () => {
@@ -243,6 +266,11 @@ export function useProjectDraft({
     }
     return push();
   }, [push]);
+
+  const getIdentity = useCallback(
+    () => ({ id: idRef.current, revision: revisionRef.current }),
+    [],
+  );
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -259,49 +287,112 @@ export function useProjectDraft({
     () => () => {
       if (timerRef.current !== null) window.clearTimeout(timerRef.current);
     },
-    []
+    [],
   );
 
   const resolveConflictByReload = useCallback(async () => {
+    if (resolutionBarrierRef.current) return;
+    if (timerRef.current !== null) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    if (flightRef.current) await flightRef.current;
     if (!idRef.current) return;
-    const fresh = await getProject(idRef.current);
-    fieldsRef.current = fieldsOf(fresh);
-    revisionRef.current = fresh.revision;
-    clearRecovery(fresh.id);
-    setFields(fieldsRef.current);
-    setRevision(fresh.revision);
-    setConflict(null);
-    setRecovered(null);
-    settle("clean");
+    let release = () => {};
+    const barrier = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    resolutionBarrierRef.current = barrier;
+    const snapshot = fieldsRef.current;
+    try {
+      const fresh = await getProject(idRef.current);
+      if (snapshot !== fieldsRef.current) {
+        if (mountedRef.current) setConflict({ serverRevision: fresh.revision });
+        settle(
+          "conflict",
+          "读取服务器版本期间又有新编辑，已保留本地内容。请重新选择处理方式。",
+        );
+        return;
+      }
+      fieldsRef.current = fieldsOf(fresh);
+      revisionRef.current = fresh.revision;
+      clearRecovery(fresh.id);
+      setFields(fieldsRef.current);
+      setRevision(fresh.revision);
+      setConflict(null);
+      setRecovered(null);
+      settle("clean");
+    } finally {
+      if (resolutionBarrierRef.current === barrier)
+        resolutionBarrierRef.current = null;
+      release();
+    }
   }, [settle]);
 
   const resolveConflictByCopy = useCallback(async () => {
-    const name = `${fieldsRef.current.name} 副本`;
-    if (!idRef.current) {
-      const created = await createProject({...fieldsRef.current, name});
-      idRef.current = created.id;
-      if (mountedRef.current) setActiveId(created.id);
-      revisionRef.current = created.revision;
-      onProjectCreated?.(created.id);
-    } else {
-      const copied = await duplicateProject(idRef.current, name);
-      const saved = await saveProject(copied.id, copied.revision, {
-        ...fieldsRef.current,
-        name
-      });
+    if (resolutionBarrierRef.current) return null;
+    if (timerRef.current !== null) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    if (flightRef.current) await flightRef.current;
+    let release = () => {};
+    const barrier = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    resolutionBarrierRef.current = barrier;
+    const previousId = idRef.current;
+    const snapshot = fieldsRef.current;
+    const name = `${Array.from(fieldsRef.current.name).slice(0, 117).join("")} 副本`;
+    runningRef.current = true;
+    settle("saving");
+    try {
+      const saved = previousId
+        ? await (async () => {
+            const copied = await duplicateProject(previousId, name);
+            return saveProject(copied.id, copied.revision, {
+              ...snapshot,
+              name,
+            });
+          })()
+        : await createProject({ ...snapshot, name });
       idRef.current = saved.id;
-      if (mountedRef.current) setActiveId(saved.id);
       revisionRef.current = saved.revision;
-      onProjectCreated?.(saved.id);
+      const changedWhileCopying = fieldsRef.current !== snapshot;
+      fieldsRef.current = { ...fieldsRef.current, name };
+      clearRecovery(previousId);
+      if (mountedRef.current) {
+        setActiveId(saved.id);
+        setRevision(saved.revision);
+        setFields(fieldsRef.current);
+        setConflict(null);
+      }
+      runningRef.current = false;
+      resolutionBarrierRef.current = null;
+      release();
+      if (changedWhileCopying) {
+        writeRecovery(saved.id, fieldsRef.current);
+        if (!(await push())) return saved.id;
+      } else clearRecovery(saved.id);
+      settle("saved");
+      if (mountedRef.current) onCreatedRef.current?.(saved.id);
+      return saved.id;
+    } catch (reason) {
+      writeRecovery(idRef.current, fieldsRef.current);
+      settle(
+        "failed",
+        reason instanceof Error
+          ? reason.message
+          : "副本保存失败，本地内容已保留。",
+      );
+      return null;
+    } finally {
+      runningRef.current = false;
+      if (resolutionBarrierRef.current === barrier)
+        resolutionBarrierRef.current = null;
+      release();
     }
-    clearRecovery(idRef.current);
-    if (mountedRef.current) {
-      setRevision(revisionRef.current);
-      setConflict(null);
-    }
-    settle("saved");
-    return idRef.current;
-  }, [onProjectCreated, settle]);
+  }, [push, settle]);
 
   const applyRecovered = useCallback(() => {
     if (!recovered) return;
@@ -329,10 +420,11 @@ export function useProjectDraft({
       recovered,
       change,
       saveNow,
+      getIdentity,
       resolveConflictByReload,
       resolveConflictByCopy,
       applyRecovered,
-      dismissRecovered
+      dismissRecovered,
     }),
     [
       fields,
@@ -344,10 +436,11 @@ export function useProjectDraft({
       recovered,
       change,
       saveNow,
+      getIdentity,
       resolveConflictByReload,
       resolveConflictByCopy,
       applyRecovered,
-      dismissRecovered
-    ]
+      dismissRecovered,
+    ],
   );
 }

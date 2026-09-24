@@ -1,5 +1,5 @@
-import {FileAudio2, Plus, Trash2, UploadCloud} from "lucide-react";
-import type {PreparedReference} from "../../types";
+import { FileAudio2, Plus, Trash2, UploadCloud } from "lucide-react";
+import type { PreparedReference } from "../../types";
 
 function formatBytes(bytes: number) {
   return bytes < 1024 * 1024
@@ -11,7 +11,7 @@ export function ReferenceAudioRack({
   references,
   onAdd,
   onRemove,
-  busy
+  busy,
 }: {
   references: PreparedReference[];
   onAdd: (file: File) => void;
@@ -30,10 +30,16 @@ export function ReferenceAudioRack({
       <div className="reference-list">
         {references.map((item, index) => (
           <article className="reference-item" key={item.id}>
-            <div className="reference-play"><FileAudio2 size={17} /></div>
+            <div className="reference-play">
+              <FileAudio2 size={17} />
+            </div>
             <div>
-              <strong>音频{index + 1} · {item.name}</strong>
-              <span>{item.duration_seconds.toFixed(1)}s · {formatBytes(item.bytes)}</span>
+              <strong>
+                音频{index + 1} · {item.name}
+              </strong>
+              <span>
+                {item.duration_seconds.toFixed(1)}s · {formatBytes(item.bytes)}
+              </span>
             </div>
             <button
               type="button"

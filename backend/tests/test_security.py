@@ -37,6 +37,12 @@ class SecurityMiddlewareTests(unittest.TestCase):
         self.assertIn("default-src 'self'", response.headers["content-security-policy"])
         self.assertEqual(response.headers["x-content-type-options"], "nosniff")
 
+    def test_cross_origin_mutation_rejected_even_with_valid_csrf(self):
+        response=self.client.post('/api/projects',headers={'Origin':'https://attacker.example','X-Qwen-Studio-CSRF':'csrf-test'},
+            json={'name':'不应创建','mode':'narration'})
+        self.assertEqual(response.status_code,403)
+        self.assertEqual(self.client.get('/api/projects').json(),[])
+
 
 if __name__ == "__main__":
     unittest.main()

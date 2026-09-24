@@ -1,22 +1,25 @@
-import {Box, Gauge, SlidersHorizontal} from "lucide-react";
-import type {GenerationParams} from "../../types";
+import { Box, Gauge, SlidersHorizontal } from "lucide-react";
+import type { GenerationParams } from "../../types";
 
 export function GenerationInspector({
   value,
-  onChange
+  onChange,
 }: {
   value: GenerationParams;
   onChange: (params: GenerationParams) => void;
 }) {
   const update = <K extends keyof GenerationParams>(
     key: K,
-    next: GenerationParams[K]
-  ) => onChange({...value, [key]: next});
+    next: GenerationParams[K],
+  ) => onChange({ ...value, [key]: next });
 
   return (
     <section className="generation-inspector">
       <div className="section-heading">
-        <div><span>输出设置</span><strong>生成参数</strong></div>
+        <div>
+          <span>输出设置</span>
+          <strong>生成参数</strong>
+        </div>
         <SlidersHorizontal size={17} />
       </div>
       <div className="inspector-fields">
@@ -25,7 +28,9 @@ export function GenerationInspector({
           <select
             aria-label="输出格式"
             value={value.format}
-            onChange={(event) => update("format", event.target.value as GenerationParams["format"])}
+            onChange={(event) =>
+              update("format", event.target.value as GenerationParams["format"])
+            }
           >
             <option value="wav">WAV</option>
             <option value="mp3">MP3</option>
@@ -37,10 +42,17 @@ export function GenerationInspector({
           <select
             aria-label="采样率"
             value={value.sampleRate}
-            onChange={(event) => update("sampleRate", Number(event.target.value) as GenerationParams["sampleRate"])}
+            onChange={(event) =>
+              update(
+                "sampleRate",
+                Number(event.target.value) as GenerationParams["sampleRate"],
+              )
+            }
           >
             {[8000, 16000, 24000, 44100, 48000].map((rate) => (
-              <option value={rate} key={rate}>{rate === 48000 ? "48kHz" : rate / 1000 + "kHz"}</option>
+              <option value={rate} key={rate}>
+                {rate === 48000 ? "48kHz" : rate / 1000 + "kHz"}
+              </option>
             ))}
           </select>
         </label>
@@ -49,14 +61,18 @@ export function GenerationInspector({
           <select
             aria-label="声道"
             value={value.channels}
-            onChange={(event) => update("channels", Number(event.target.value) as 1 | 2)}
+            onChange={(event) =>
+              update("channels", Number(event.target.value) as 1 | 2)
+            }
           >
             <option value={1}>单声道 Mono</option>
             <option value={2}>立体声 Stereo</option>
           </select>
         </label>
         <label className="range-field">
-          <span>音量 <b>{value.volume}</b></span>
+          <span>
+            音量 <b>{value.volume}</b>
+          </span>
           <input
             aria-label="音量"
             type="range"
@@ -67,7 +83,9 @@ export function GenerationInspector({
           />
         </label>
         <label className="range-field">
-          <span>语速 <b>{value.rate.toFixed(1)}X</b></span>
+          <span>
+            语速 <b>{value.rate.toFixed(1)}X</b>
+          </span>
           <input
             aria-label="语速"
             type="range"
@@ -101,7 +119,9 @@ export function GenerationInspector({
         </label>
         {value.format === "mp3" ? (
           <div className="mp3-quality">
-            <div className="subsection-label"><Gauge size={15} /> MP3 音质</div>
+            <div className="subsection-label">
+              <Gauge size={15} /> MP3 音质
+            </div>
             <label className="toggle-row">
               <span>恒定码率 CBR</span>
               <input
@@ -117,10 +137,14 @@ export function GenerationInspector({
                 <select
                   aria-label="MP3 比特率"
                   value={value.bitRate}
-                  onChange={(event) => update("bitRate", Number(event.target.value))}
+                  onChange={(event) =>
+                    update("bitRate", Number(event.target.value))
+                  }
                 >
                   {[64, 96, 128, 192, 256, 320].map((rate) => (
-                    <option value={rate} key={rate}>{rate} kbps</option>
+                    <option value={rate} key={rate}>
+                      {rate} kbps
+                    </option>
                   ))}
                 </select>
               </label>
@@ -133,7 +157,9 @@ export function GenerationInspector({
                   min={0}
                   max={9}
                   value={value.quality}
-                  onChange={(event) => update("quality", Number(event.target.value))}
+                  onChange={(event) =>
+                    update("quality", Number(event.target.value))
+                  }
                 />
               </label>
             )}

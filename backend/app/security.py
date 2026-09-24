@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
+from urllib.parse import urlsplit
 
 
 ALLOWED_HOSTS = {"127.0.0.1", "localhost", "testserver"}
@@ -20,6 +21,12 @@ class LocalSecurityMiddleware(BaseHTTPMiddleware):
             return JSONResponse(
                 status_code=400, content={"detail": "Local host required"}
             )
+        if request.method in MUTATING_METHODS and request.url.path.startswith('/api/'):
+            origin=request.headers.get('origin')
+            if origin:
+                parsed=urlsplit(origin)
+                if parsed.scheme not in {'http','https'} or parsed.netloc.lower()!=request.headers.get('host','').lower():
+                    return JSONResponse(status_code=403,content={'error':{'code':'ORIGIN_REJECTED','message':'只允许本机同源操作。','retryable':False}})
         if (
             request.url.path.startswith("/api/")
             and request.method in MUTATING_METHODS

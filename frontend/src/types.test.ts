@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {DEFAULT_PARAMS} from "./types";
+import { describe, expect, it } from "vitest";
+import { DEFAULT_PARAMS } from "./types";
 
 describe("shared audio contracts", () => {
   it("defines safe Next defaults", () => {
@@ -9,7 +9,7 @@ describe("shared audio contracts", () => {
       channels: 2,
       volume: 50,
       rate: 1,
-      seed: 42
+      seed: 42,
     });
   });
 });

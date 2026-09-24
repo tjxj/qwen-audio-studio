@@ -19,3 +19,8 @@ cp "$LAUNCHER_DIR/Info.plist" "$DESTINATION/Contents/Info.plist"
 /usr/bin/clang -O2 -Wall -Wextra \
   "$LAUNCHER_DIR/QwenAudioStudio.c" \
   -o "$DESTINATION/Contents/MacOS/QwenAudioStudio"
+/usr/bin/clang -O2 -Wall -Wextra -framework Cocoa \
+  "$LAUNCHER_DIR/DirectoryPicker.m" -o "$LAUNCHER_DIR/DirectoryPicker"
+mkdir -p "$LAUNCHER_DIR/Qwen Folder Picker.app/Contents/MacOS"
+cp "$LAUNCHER_DIR/DirectoryPicker-Info.plist" "$LAUNCHER_DIR/Qwen Folder Picker.app/Contents/Info.plist"
+cp "$LAUNCHER_DIR/DirectoryPicker" "$LAUNCHER_DIR/Qwen Folder Picker.app/Contents/MacOS/DirectoryPicker"

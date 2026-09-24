@@ -32,25 +32,18 @@ class CredentialPatchTests(unittest.TestCase):
         self.headers = {"X-Qwen-Studio-CSRF": "csrf-test"}
 
     def tearDown(self) -> None:
+        self.app.state.job_manager.shutdown()
+        self.app.state.instance_lock.release()
         self.client.close()
 
     def patch(self, body: dict, keychain=None):
         store = keychain or self.keychain
-        client = TestClient(
-            create_app(
-                config=AppConfig.from_environment(
-                    {"QWEN_STUDIO_DATA_ROOT": self.temp.name}
-                ),
-                credential_store=store,
-                csrf_token="csrf-test",
-            )
-        )
-        self.addCleanup(client.close)
-        return client.patch(
-            "/api/settings/credentials",
-            headers={"X-Qwen-Studio-CSRF": "csrf-test"},
-            json=body,
-        )
+        previous = self.app.state.credential_store
+        self.app.state.credential_store = store
+        try:
+            return self.client.patch('/api/settings/credentials', headers=self.headers, json=body)
+        finally:
+            self.app.state.credential_store = previous
 
     def test_only_the_submitted_field_changes(self) -> None:
         response = self.patch({"workspace_id": "workspace-new"})

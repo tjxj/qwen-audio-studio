@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import secrets
 import sqlite3
+import re
 from pathlib import Path
 from typing import Any, Optional
 
@@ -28,9 +29,19 @@ from app.services.migrations import (
     project_row,
 )
 from app.services.storage import require_safe_id, sanitize_error
+from app.errors import DomainError
 
 
 DATABASE_NAME = "studio.sqlite3"
+
+
+class ManagedConnection(sqlite3.Connection):
+    """A transaction context also releases the connection deterministically."""
+    def __exit__(self, *args):
+        try:
+            return super().__exit__(*args)
+        finally:
+            self.close()
 
 JOB_UPDATABLE = {
     "attempt",
@@ -94,7 +105,7 @@ class StudioStore:
             migrate_v1_to_sqlite(self.data_root)
 
     def _connect(self) -> sqlite3.Connection:
-        connection = sqlite3.connect(self.db_path)
+        connection = sqlite3.connect(self.db_path, factory=ManagedConnection)
         StudioSchema.apply_pragmas(connection)
         StudioSchema.apply_wal(connection)
         connection.row_factory = sqlite3.Row
@@ -158,13 +169,22 @@ class StudioStore:
         try:
             connection.execute("BEGIN IMMEDIATE")
             current = connection.execute(
-                "SELECT revision FROM projects WHERE id = ?", (project_id,)
+                "SELECT revision,prompt,reference_bindings_json FROM projects WHERE id = ?", (project_id,)
             ).fetchone()
             if current is None:
                 raise KeyError(project_id)
+            if 'reference_bindings' in patch and patch['reference_bindings'] is not None:
+                old_bindings=_load(current['reference_bindings_json'],[])
+                new_bindings=patch['reference_bindings']
+                if old_bindings and patch.get('prompt',current['prompt'])==current['prompt']:
+                    for raw in re.findall(r'@voice(\d+)',current['prompt']):
+                        index=int(raw)-1
+                        if 0<=index<len(old_bindings) and (index>=len(new_bindings) or old_bindings[index]['reference_id']!=new_bindings[index]['reference_id']):
+                            raise DomainError('INVALID_VOICE_BINDING','脚本使用了固定 @voice 编号，请先修改对应台词，再删除或调整音色顺序。',status=422,field='reference_bindings')
             columns: dict[str, Any] = {"updated_at": now_iso()}
             for key, value in patch.items():
-                columns[key] = _project_column_value(key, value)
+                column = key + '_json' if key in {'params','reference_bindings','template_application'} else key
+                columns[column] = _project_column_value(key, value)
             assignments = ", ".join(f"{name} = ?" for name in columns)
             result = connection.execute(
                 f"UPDATE projects SET {assignments}, revision = revision + 1 "
@@ -209,7 +229,8 @@ class StudioStore:
             )
             if asset is None or asset["deleted_at"] is not None:
                 raise ValueError("该任务缺少可用的音频文件")
-            if not Path(asset["canonical_path"]).is_file():
+            final_path=Path(asset['canonical_path'])
+            if not final_path.is_file() or final_path.is_symlink() or final_path.resolve()!=final_path:
                 raise ValueError("音频文件已移动或缺失")
             connection.execute(
                 "UPDATE projects SET final_job_id = ?, updated_at = ? WHERE id = ?",
@@ -488,7 +509,7 @@ class StudioStore:
         if asset["deleted_at"] is not None:
             raise FileNotFoundError(asset_id)
         path = Path(asset["canonical_path"])
-        if not path.is_file():
+        if not path.is_file() or path.is_symlink() or path.resolve() != path:
             raise FileNotFoundError(asset_id)
         return {**asset, "path": path}
 

@@ -1,18 +1,22 @@
-import {act, render, screen, waitFor} from "@testing-library/react";
-import {beforeEach, describe, expect, it, vi} from "vitest";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   AUTOSAVE_DELAY_MS,
   recoveryKey,
   useProjectDraft,
-  type ProjectDraftController
+  type ProjectDraftController,
 } from "./useProjectDraft";
-import {DEFAULT_PARAMS, type Project} from "../../types";
+import { DEFAULT_PARAMS, type Project } from "../../types";
 
 let controller: ProjectDraftController;
-const calls: {method: string; url: string; body: any}[] = [];
+const calls: { method: string; url: string; body: any }[] = [];
 
-function Harness(props: {projectId: string | null; loaded?: Project}) {
-  controller = useProjectDraft({...props, onProjectCreated: vi.fn()});
+function Harness(props: {
+  projectId: string | null;
+  loaded?: Project;
+  onProjectCreated?: (id: string) => void;
+}) {
+  controller = useProjectDraft(props);
   return (
     <div>
       <span data-testid="state">{controller.state}</span>
@@ -20,7 +24,10 @@ function Harness(props: {projectId: string | null; loaded?: Project}) {
       <button type="button" onClick={() => void controller.saveNow()}>
         立即保存
       </button>
-      <button type="button" onClick={() => controller.change({prompt: "手打的字"})}>
+      <button
+        type="button"
+        onClick={() => controller.change({ prompt: "手打的字" })}
+      >
         编辑
       </button>
     </div>
@@ -41,14 +48,14 @@ function project(overrides: Partial<Project> = {}): Project {
     createdAt: "2026-09-23T01:00:00+00:00",
     updatedAt: "2026-09-23T01:00:00+00:00",
     archived: false,
-    ...overrides
+    ...overrides,
   };
 }
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: {"Content-Type": "application/json"}
+    headers: { "Content-Type": "application/json" },
   });
 }
 
@@ -58,7 +65,7 @@ function draftResponse(overrides: Record<string, unknown> = {}) {
     name: "雨夜陪伴",
     mode: "podcast",
     prompt: "手打的字",
-    params: {format: "wav", sample_rate: 48000, channels: 2},
+    params: { format: "wav", sample_rate: 48000, channels: 2 },
     reference_bindings: [],
     template_application: null,
     output_directory_id: null,
@@ -67,27 +74,29 @@ function draftResponse(overrides: Record<string, unknown> = {}) {
     final_job_id: null,
     created_at: "2026-09-23T01:00:00+00:00",
     updated_at: "2026-09-23T02:00:00+00:00",
-    ...overrides
+    ...overrides,
   });
 }
 
-function stub(handler: (init: any, url: string) => Response | Promise<Response>) {
+function stub(
+  handler: (init: any, url: string) => Response | Promise<Response>,
+) {
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: string, init: any = {}) => {
       if (url === "/api/session") {
         return jsonResponse({
           csrf_token: "csrf-test",
-          credentials: {api_key_configured: true, workspace_configured: true}
+          credentials: { api_key_configured: true, workspace_configured: true },
         });
       }
       calls.push({
         method: init.method || "GET",
         url,
-        body: init.body ? JSON.parse(init.body) : null
+        body: init.body ? JSON.parse(init.body) : null,
       });
       return handler(init, url);
-    })
+    }),
   );
 }
 
@@ -107,15 +116,234 @@ async function flush(ticks = 12) {
 }
 
 describe("project draft autosave", () => {
+  it("waits for the in-flight write and subsequent edits before immediate save resolves", async () => {
+    let first: (value: Response) => void = () => undefined;
+    let second: (value: Response) => void = () => undefined;
+    const a = new Promise<Response>((resolve) => {
+      first = resolve;
+    });
+    const b = new Promise<Response>((resolve) => {
+      second = resolve;
+    });
+    let count = 0;
+    stub(() => (++count === 1 ? a : b));
+    render(<Harness projectId="proj_1" loaded={project()} />);
+    let saved = false;
+    let pending: Promise<boolean>;
+    act(() => {
+      controller.change({ prompt: "先写" });
+      void controller.saveNow();
+    });
+    await flush();
+    act(() => {
+      controller.change({ prompt: "保存过程中又写" });
+      pending = controller.saveNow().then((ok) => {
+        saved = ok;
+        return ok;
+      });
+    });
+    await flush();
+    expect(saved).toBe(false);
+    await act(async () => {
+      first(draftResponse({ revision: 5 }));
+    });
+    await flush();
+    expect(saved).toBe(false);
+    expect(
+      JSON.parse(window.localStorage.getItem(recoveryKey("proj_1")) || "{}")
+        .prompt,
+    ).toBe("保存过程中又写");
+    await act(async () => {
+      second(draftResponse({ revision: 6 }));
+      await pending;
+    });
+    expect(saved).toBe(true);
+    expect(controller.revision).toBe(6);
+    expect(
+      calls
+        .filter((call) => call.method === "PATCH")
+        .map((call) => call.body.prompt),
+    ).toEqual(["先写", "保存过程中又写"]);
+  });
+
+  it("defers new-project navigation until every queued edit is persisted", async () => {
+    const created = vi.fn();
+    let first: (value: Response) => void = () => undefined;
+    let second: (value: Response) => void = () => undefined;
+    const a = new Promise<Response>((resolve) => {
+      first = resolve;
+    });
+    const b = new Promise<Response>((resolve) => {
+      second = resolve;
+    });
+    let count = 0;
+    stub(() => (++count === 1 ? a : b));
+    render(<Harness projectId={null} onProjectCreated={created} />);
+    act(() => {
+      controller.change({ prompt: "创建时的文本" });
+      void controller.saveNow();
+    });
+    await flush();
+    act(() => controller.change({ prompt: "导航前追加的文本" }));
+    await act(async () => {
+      first(draftResponse({ id: "created", revision: 1 }));
+    });
+    await flush();
+    expect(created).not.toHaveBeenCalled();
+    expect(
+      JSON.parse(window.localStorage.getItem(recoveryKey("created")) || "{}")
+        .prompt,
+    ).toBe("导航前追加的文本");
+    await act(async () => {
+      second(draftResponse({ id: "created", revision: 2 }));
+    });
+    await flush();
+    expect(created).toHaveBeenCalledOnce();
+    expect(created).toHaveBeenCalledWith("created");
+    expect(window.localStorage.getItem(recoveryKey(null))).toBeNull();
+  });
+
+  it("returns the created identity to a caller holding the pre-save controller", async () => {
+    stub(() => draftResponse({ id: "new-identity", revision: 1 }));
+    render(<Harness projectId={null} />);
+    const beforeSave = controller;
+    await act(async () => {
+      expect(await beforeSave.saveNow()).toBe(true);
+    });
+    expect(beforeSave.getIdentity()).toEqual({
+      id: "new-identity",
+      revision: 1,
+    });
+  });
+
+  it("returns failure to every waiting caller if the queued update fails", async () => {
+    let first: (value: Response) => void = () => undefined;
+    const gate = new Promise<Response>((resolve) => {
+      first = resolve;
+    });
+    let count = 0;
+    stub(() =>
+      ++count === 1 ? gate : Promise.reject(new TypeError("offline")),
+    );
+    render(<Harness projectId="proj_1" loaded={project()} />);
+    let original: Promise<boolean>;
+    let waiting: Promise<boolean>;
+    act(() => {
+      controller.change({ prompt: "已经提交" });
+      original = controller.saveNow();
+    });
+    await flush();
+    act(() => {
+      controller.change({ prompt: "尚未存上" });
+      waiting = controller.saveNow();
+    });
+    await act(async () => {
+      first(draftResponse({ revision: 5 }));
+      expect(await original).toBe(false);
+      expect(await waiting).toBe(false);
+    });
+    expect(controller.state).toBe("failed");
+    expect(
+      JSON.parse(window.localStorage.getItem(recoveryKey("proj_1")) || "{}")
+        .prompt,
+    ).toBe("尚未存上");
+  });
+
+  it("keeps the copied draft name on the next autosave and removes the old recovery copy", async () => {
+    stub((init, url) => {
+      if (url.endsWith("/duplicate"))
+        return draftResponse({
+          id: "copy",
+          revision: 1,
+          name: "雨夜陪伴 副本",
+        });
+      return draftResponse({ id: "copy", revision: 2, name: "雨夜陪伴 副本" });
+    });
+    render(<Harness projectId="proj_1" loaded={project()} />);
+    act(() => controller.change({ prompt: "仅本地修改" }));
+    await act(async () => {
+      await controller.resolveConflictByCopy();
+    });
+    expect(controller.fields.name).toBe("雨夜陪伴 副本");
+    expect(window.localStorage.getItem(recoveryKey("proj_1"))).toBeNull();
+    await act(async () => {
+      controller.change({ prompt: "继续改副本" });
+      await controller.saveNow();
+    });
+    expect(
+      calls.filter((call) => call.method === "PATCH").at(-1)?.body.name,
+    ).toBe("雨夜陪伴 副本");
+  });
+
+  it("holds immediate save behind copy creation instead of patching the previous project", async () => {
+    let finish: (value: Response) => void = () => undefined;
+    const gate = new Promise<Response>((resolve) => {
+      finish = resolve;
+    });
+    stub((init, url) =>
+      url.endsWith("/duplicate")
+        ? gate
+        : draftResponse({ id: "copy", name: "雨夜陪伴 副本", revision: 2 }),
+    );
+    render(<Harness projectId="proj_1" loaded={project()} />);
+    let copy: Promise<string | null>;
+    let saving: Promise<boolean>;
+    act(() => {
+      copy = controller.resolveConflictByCopy();
+    });
+    await flush();
+    act(() => {
+      controller.change({ prompt: "副本进行时输入" });
+      saving = controller.saveNow();
+    });
+    await flush();
+    expect(calls.filter((call) => call.method === "PATCH")).toHaveLength(0);
+    await act(async () => {
+      finish(draftResponse({ id: "copy", revision: 1 }));
+      await copy;
+      expect(await saving).toBe(true);
+    });
+    expect(
+      calls
+        .filter((call) => call.method === "PATCH")
+        .every((call) => call.url === "/api/projects/copy"),
+    ).toBe(true);
+    expect(
+      calls.filter((call) => call.method === "PATCH").at(-1)?.body.prompt,
+    ).toBe("副本进行时输入");
+  });
+
+  it("does not discard typing that happens while the server copy is being reloaded", async () => {
+    let finish: (value: Response) => void = () => undefined;
+    const gate = new Promise<Response>((resolve) => {
+      finish = resolve;
+    });
+    stub(() => gate);
+    render(<Harness projectId="proj_1" loaded={project()} />);
+    let loading: Promise<void>;
+    act(() => {
+      loading = controller.resolveConflictByReload();
+    });
+    await flush();
+    act(() => controller.change({ prompt: "读取期间新写的内容" }));
+    await act(async () => {
+      finish(draftResponse({ prompt: "远程版本", revision: 8 }));
+      await loading;
+    });
+    expect(controller.fields.prompt).toBe("读取期间新写的内容");
+    expect(controller.revision).toBe(4);
+    expect(controller.state).toBe("conflict");
+  });
+
   it("waits for a pause in typing before writing, then reports saved", async () => {
     vi.useFakeTimers();
     try {
       stub(() => draftResponse());
       render(<Harness projectId="proj_1" loaded={project()} />);
 
-      act(() => controller.change({prompt: "第一版"}));
+      act(() => controller.change({ prompt: "第一版" }));
       expect(screen.getByTestId("state")).toHaveTextContent("dirty");
-      act(() => controller.change({prompt: "第二版"}));
+      act(() => controller.change({ prompt: "第二版" }));
       expect(calls.filter((call) => call.method === "PATCH")).toHaveLength(0);
 
       await act(async () => {
@@ -144,19 +372,21 @@ describe("project draft autosave", () => {
     try {
       stub(() => {
         seen += 1;
-        return seen === 1 ? gate : Promise.resolve(draftResponse({revision: 6}));
+        return seen === 1
+          ? gate
+          : Promise.resolve(draftResponse({ revision: 6 }));
       });
       render(<Harness projectId="proj_1" loaded={project()} />);
 
-      act(() => controller.change({prompt: "甲"}));
+      act(() => controller.change({ prompt: "甲" }));
       await act(async () => {
         vi.advanceTimersByTime(AUTOSAVE_DELAY_MS);
       });
       await flush();
       expect(screen.getByTestId("state")).toHaveTextContent("saving");
 
-      act(() => controller.change({prompt: "乙"}));
-      release(draftResponse({revision: 5}));
+      act(() => controller.change({ prompt: "乙" }));
+      release(draftResponse({ revision: 5 }));
       await flush();
       expect(screen.getByTestId("state")).toHaveTextContent("saved");
 
@@ -184,7 +414,7 @@ describe("project draft autosave", () => {
     });
     expect(screen.getByTestId("state")).toHaveTextContent("failed");
     const copy = JSON.parse(
-      window.localStorage.getItem(recoveryKey("proj_1")) || "null"
+      window.localStorage.getItem(recoveryKey("proj_1")) || "null",
     );
     expect(copy.prompt).toBe("服务器上的稿子");
   });
@@ -199,20 +429,20 @@ describe("project draft autosave", () => {
               message: "项目已被修改",
               field: "expected_revision",
               retryable: false,
-              details: {current_revision: 9}
-            }
+              details: { current_revision: 9 },
+            },
           }),
-          {status: 409, headers: {"Content-Type": "application/json"}}
+          { status: 409, headers: { "Content-Type": "application/json" } },
         );
       }
-      return draftResponse({revision: 9});
+      return draftResponse({ revision: 9 });
     });
     render(<Harness projectId="proj_1" loaded={project()} />);
 
     await act(async () => {
       await controller.saveNow();
     });
-    expect(controller.conflict).toEqual({serverRevision: 9});
+    expect(controller.conflict).toEqual({ serverRevision: 9 });
     expect(screen.getByTestId("state")).toHaveTextContent("conflict");
     expect(calls.filter((call) => call.method === "PATCH")).toHaveLength(1);
     expect(window.localStorage.getItem(recoveryKey("proj_1"))).not.toBeNull();
@@ -230,16 +460,16 @@ describe("project draft autosave", () => {
               message: "项目已被修改",
               field: "expected_revision",
               retryable: false,
-              details: {current_revision: 9}
-            }
+              details: { current_revision: 9 },
+            },
           }),
-          {status: 409, headers: {"Content-Type": "application/json"}}
+          { status: 409, headers: { "Content-Type": "application/json" } },
         );
       }
       if (init.method === "POST" && url.endsWith("/duplicate")) {
-        return draftResponse({id: "proj_copy", revision: 1});
+        return draftResponse({ id: "proj_copy", revision: 1 });
       }
-      return draftResponse({id: "proj_copy", revision: 2});
+      return draftResponse({ id: "proj_copy", revision: 2 });
     });
     render(<Harness projectId="proj_1" loaded={project()} />);
 
@@ -251,16 +481,19 @@ describe("project draft autosave", () => {
       copyId = await controller.resolveConflictByCopy();
     });
     expect(copyId).toBe("proj_copy");
-    expect(calls.map((call) => call.url)).toContain("/api/projects/proj_1/duplicate");
+    expect(calls.map((call) => call.url)).toContain(
+      "/api/projects/proj_1/duplicate",
+    );
     expect(
-      calls.find((call) => call.method === "PATCH" && call.url.includes("proj_copy"))
-        ?.body.prompt
+      calls.find(
+        (call) => call.method === "PATCH" && call.url.includes("proj_copy"),
+      )?.body.prompt,
     ).toBe("服务器上的稿子");
     expect(controller.projectId).toBe("proj_copy");
   });
 
   it("creates a project the first time an unsaved draft is written", async () => {
-    stub(() => draftResponse({id: "proj_new", revision: 1}));
+    stub(() => draftResponse({ id: "proj_new", revision: 1 }));
     render(<Harness projectId={null} />);
 
     await act(async () => {
@@ -290,8 +523,8 @@ describe("project draft autosave", () => {
         "params",
         "prompt",
         "referenceBindings",
-        "templateApplication"
-      ].sort()
+        "templateApplication",
+      ].sort(),
     );
   });
 
@@ -299,15 +532,15 @@ describe("project draft autosave", () => {
     stub(() => draftResponse());
     render(<Harness projectId="proj_1" loaded={project()} />);
     await act(async () => {
-      controller.change({prompt: "快捷键保存"});
+      controller.change({ prompt: "快捷键保存" });
     });
     await act(async () => {
       window.dispatchEvent(
-        new KeyboardEvent("keydown", {key: "s", metaKey: true})
+        new KeyboardEvent("keydown", { key: "s", metaKey: true }),
       );
     });
     await waitFor(() =>
-      expect(screen.getByTestId("state")).toHaveTextContent("saved")
+      expect(screen.getByTestId("state")).toHaveTextContent("saved"),
     );
     expect(calls.some((call) => call.method === "PATCH")).toBe(true);
   });
@@ -318,16 +551,16 @@ describe("project draft autosave", () => {
     });
     const first = render(<Harness projectId={null} />);
     await act(async () => {
-      controller.change({prompt: "没网时写的稿子"});
+      controller.change({ prompt: "没网时写的稿子" });
       await controller.saveNow();
     });
     expect(screen.getByTestId("state")).toHaveTextContent("failed");
     expect(
-      JSON.parse(window.localStorage.getItem(recoveryKey(null)) || "{}").prompt
+      JSON.parse(window.localStorage.getItem(recoveryKey(null)) || "{}").prompt,
     ).toBe("没网时写的稿子");
     first.unmount();
 
-    stub(() => draftResponse({id: "proj_other", revision: 1}));
+    stub(() => draftResponse({ id: "proj_other", revision: 1 }));
     render(<Harness projectId={null} />);
     await waitFor(() => expect(controller.recovered).not.toBeNull());
     expect(controller.recovered?.prompt).toBe("没网时写的稿子");
@@ -336,9 +569,9 @@ describe("project draft autosave", () => {
   it("clears the unsaved-draft copy once the brand-new project is created", async () => {
     vi.useFakeTimers();
     try {
-      stub(() => draftResponse({id: "proj_created", revision: 1}));
+      stub(() => draftResponse({ id: "proj_created", revision: 1 }));
       render(<Harness projectId={null} />);
-      act(() => controller.change({prompt: "第一行"}));
+      act(() => controller.change({ prompt: "第一行" }));
       await act(async () => {
         vi.advanceTimersByTime(AUTOSAVE_DELAY_MS);
       });
@@ -360,8 +593,8 @@ describe("project draft autosave", () => {
         params: DEFAULT_PARAMS,
         referenceBindings: [],
         outputDirectoryId: null,
-        templateApplication: null
-      })
+        templateApplication: null,
+      }),
     );
     stub(() => draftResponse());
     render(<Harness projectId="proj_1" loaded={project()} />);

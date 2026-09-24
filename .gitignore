@@ -1,5 +1,9 @@
 .DS_Store
 .venv/
+.venv
+instance.lock
+frontend/test-results/
+frontend/playwright-report/
 frontend/node_modules/
 frontend/dist/
 frontend/*.tsbuildinfo
@@ -17,3 +21,5 @@ Qwen Audio Studio.app/
 *.sqlite3.part
 studio.lock
 backups/
+launcher/DirectoryPicker
+launcher/Qwen Folder Picker.app/

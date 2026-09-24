@@ -1,11 +1,11 @@
-import {FolderOpen, ShieldCheck, Waves} from "lucide-react";
+import { FolderOpen, ShieldCheck, Waves } from "lucide-react";
 
 export function GenerationCommandBar({
   referenceCount,
   disabled,
   busy,
   credentialsReady,
-  onGenerate
+  onGenerate,
 }: {
   referenceCount: number;
   disabled: boolean;
@@ -23,11 +23,15 @@ export function GenerationCommandBar({
         </div>
       </div>
       {!credentialsReady ? (
-        <p className="credential-warning">请先在设置中配置 API Key 与 Workspace ID</p>
+        <p className="credential-warning">
+          请先在设置中配置 API Key 与 Workspace ID
+        </p>
       ) : null}
       <div className="output-folder">
         <span>输出文件夹</span>
-        <span className="output-path"><FolderOpen size={16} /> 本地默认目录</span>
+        <span className="output-path">
+          <FolderOpen size={16} /> 本地默认目录
+        </span>
       </div>
       <button
         type="button"

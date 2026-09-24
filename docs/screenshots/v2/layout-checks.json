@@ -1,0 +1,206 @@
+{
+  "syntheticFixtures": true,
+  "errors": [],
+  "results": [
+    {
+      "name": "create",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "scrollWidth": 1440,
+      "scrollHeight": 900,
+      "serif": true,
+      "overflows": []
+    },
+    {
+      "name": "library",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "scrollWidth": 1440,
+      "scrollHeight": 900,
+      "serif": true,
+      "overflows": []
+    },
+    {
+      "name": "templates",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "scrollWidth": 1440,
+      "scrollHeight": 900,
+      "serif": true,
+      "overflows": []
+    },
+    {
+      "name": "settings",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "scrollWidth": 1440,
+      "scrollHeight": 900,
+      "serif": true,
+      "overflows": []
+    },
+    {
+      "name": "create",
+      "theme": "light",
+      "width": 1280,
+      "height": 720,
+      "scrollWidth": 1280,
+      "scrollHeight": 720,
+      "serif": true,
+      "overflows": []
+    },
+    {
+      "name": "library",
+      "theme": "light",
+      "width": 1280,
+      "height": 720,
+      "scrollWidth": 1280,
+      "scrollHeight": 720,
+      "serif": true,
+      "overflows": []
+    },
+    {
+      "name": "templates",
+      "theme": "light",
+      "width": 1280,
+      "height": 720,
+      "scrollWidth": 1280,
+      "scrollHeight": 720,
+      "serif": true,
+      "overflows": []
+    },
+    {
+      "name": "settings",
+      "theme": "light",
+      "width": 1280,
+      "height": 720,
+      "scrollWidth": 1280,
+      "scrollHeight": 720,
+      "serif": true,
+      "overflows": []
+    },
+    {
+      "name": "create",
+      "theme": "light",
+      "width": 768,
+      "height": 1024,
+      "scrollWidth": 768,
+      "scrollHeight": 1024,
+      "serif": true,
+      "overflows": []
+    },
+    {
+      "name": "library",
+      "theme": "light",
+      "width": 768,
+      "height": 1024,
+      "scrollWidth": 768,
+      "scrollHeight": 1024,
+      "serif": true,
+      "overflows": []
+    },
+    {
+      "name": "templates",
+      "theme": "light",
+      "width": 768,
+      "height": 1024,
+      "scrollWidth": 768,
+      "scrollHeight": 1024,
+      "serif": true,
+      "overflows": []
+    },
+    {
+      "name": "settings",
+      "theme": "light",
+      "width": 768,
+      "height": 1024,
+      "scrollWidth": 768,
+      "scrollHeight": 1024,
+      "serif": true,
+      "overflows": []
+    },
+    {
+      "name": "create",
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "scrollHeight": 844,
+      "serif": true,
+      "overflows": []
+    },
+    {
+      "name": "library",
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "scrollHeight": 844,
+      "serif": true,
+      "overflows": []
+    },
+    {
+      "name": "templates",
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "scrollHeight": 844,
+      "serif": true,
+      "overflows": []
+    },
+    {
+      "name": "settings",
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "scrollHeight": 844,
+      "serif": true,
+      "overflows": []
+    },
+    {
+      "name": "create",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "scrollWidth": 1440,
+      "scrollHeight": 900,
+      "serif": true,
+      "overflows": []
+    },
+    {
+      "name": "library",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "scrollWidth": 1440,
+      "scrollHeight": 900,
+      "serif": true,
+      "overflows": []
+    },
+    {
+      "name": "templates",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "scrollWidth": 1440,
+      "scrollHeight": 900,
+      "serif": true,
+      "overflows": []
+    },
+    {
+      "name": "settings",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "scrollWidth": 1440,
+      "scrollHeight": 900,
+      "serif": true,
+      "overflows": []
+    }
+  ]
+}

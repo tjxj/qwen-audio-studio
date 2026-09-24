@@ -38,7 +38,7 @@ export const DEFAULT_PARAMS: GenerationParams = {
   enableCbr: false,
   bitRate: 128,
   quality: 5,
-  enableAigcTag: false
+  enableAigcTag: false,
 };
 
 export interface ReferenceAudio {
@@ -113,10 +113,16 @@ export const SAVE_STATE_LABELS: Record<SaveState, string> = {
   saving: "保存中",
   saved: "已保存",
   failed: "保存失败",
-  conflict: "保存冲突"
+  conflict: "保存冲突",
 };
 
 export interface Job {
+  referenceBindings?: ReferenceBinding[];
+  outputDirectoryId?: string | null;
+  stage?: "preparing" | "requesting" | "downloading" | "validating";
+  note?: string;
+  displayName?: string;
+  fileAvailable?: boolean;
   id: string;
   projectId: string;
   projectName: string;
@@ -148,6 +154,9 @@ export interface PreparedReference {
 }
 
 export interface CreateJobRequest {
+  candidate_seeds?: number[];
+  output_directory_id?: string | null;
+  reference_bindings?: Array<{ reference_id: string; alias: string }>;
   project_id: string;
   project_name: string;
   mode: CreationMode;
@@ -164,7 +173,7 @@ export interface CreateJobRequest {
     quality: number;
     enable_aigc_tag: boolean;
   };
-  references: Array<{id: string; consent_token: string}>;
+  references: Array<{ id: string; consent_token: string }>;
 }
 
 export interface CapabilityContract {
@@ -176,6 +185,6 @@ export interface CapabilityContract {
   maxReferenceSeconds: number;
   maxReferenceBytes: number;
   maxPromptChars: number;
-  volume: {min: number; max: number; default: number};
-  rate: {min: number; max: number; default: number};
+  volume: { min: number; max: number; default: number };
+  rate: { min: number; max: number; default: number };
 }

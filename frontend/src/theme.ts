@@ -14,7 +14,7 @@ export function normalizeTheme(value: unknown): ThemePreference {
 
 export function resolveTheme(
   preference: ThemePreference,
-  systemPrefersDark: boolean
+  systemPrefersDark: boolean,
 ): ResolvedTheme {
   if (preference === "system") return systemPrefersDark ? "dark" : "light";
   return preference;
@@ -57,7 +57,7 @@ export function watchSystemTheme() {
         } catch {
           return null;
         }
-      })()
+      })(),
     );
     if (stored === "system") applyTheme("system");
   };

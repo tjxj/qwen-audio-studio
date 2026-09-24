@@ -1,12 +1,12 @@
-import {useCallback, useEffect, useState} from "react";
-import {getSession} from "../../api";
-import type {CredentialStatus} from "../../types";
+import { useCallback, useEffect, useState } from "react";
+import { getSession } from "../../api";
+import type { CredentialStatus } from "../../types";
 import SettingsPage from "./SettingsPage";
 
 export default function SettingsRoute() {
   const [status, setStatus] = useState<CredentialStatus>({
     apiKeyConfigured: false,
-    workspaceConfigured: false
+    workspaceConfigured: false,
   });
   const [ready, setReady] = useState(false);
 
@@ -15,10 +15,10 @@ export default function SettingsRoute() {
       const session = await getSession();
       setStatus({
         apiKeyConfigured: session.credentials.api_key_configured,
-        workspaceConfigured: session.credentials.workspace_configured
+        workspaceConfigured: session.credentials.workspace_configured,
       });
     } catch {
-      setStatus({apiKeyConfigured: false, workspaceConfigured: false});
+      setStatus({ apiKeyConfigured: false, workspaceConfigured: false });
     } finally {
       setReady(true);
     }
@@ -28,11 +28,5 @@ export default function SettingsRoute() {
     void refresh();
   }, [refresh]);
 
-  return (
-    <SettingsPage
-      status={status}
-      ready={ready}
-      refreshStatus={refresh}
-    />
-  );
+  return <SettingsPage status={status} ready={ready} refreshStatus={refresh} />;
 }
